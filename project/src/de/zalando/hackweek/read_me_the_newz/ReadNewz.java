@@ -8,6 +8,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
+import android.widget.EditText;
+import android.widget.TextView;
 import org.xml.sax.SAXException;
 
 import android.app.Activity;
@@ -24,7 +26,7 @@ import nl.matshofman.saxrssreader.RssItem;
 import nl.matshofman.saxrssreader.RssReader;
 
 public class ReadNewz extends Activity {
-// implements TextToSpeech.OnInitListener {
+//    implements TextToSpeech.OnInitListener {
 
     private static final String[] urls = new String[] {
         "http://rss.slashdot.org/Slashdot/slashdot",
@@ -33,7 +35,8 @@ public class ReadNewz extends Activity {
     private static final String IDENTIFIER = "ReadNewz";
 
     private ArrayList<RssItem> rssItems;
-// private TextToSpeech textToSpeech;
+    private int rssItemIndex = -1;
+//    private TextToSpeech textToSpeech;
 
     /**
      * Called when the activity is first created.
@@ -43,7 +46,7 @@ public class ReadNewz extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         updateRSSItems();
-// textToSpeech = new TextToSpeech(this, this);
+//        textToSpeech = new TextToSpeech(this, this);
     }
 
     private void updateRSSItems() {
@@ -88,11 +91,30 @@ public class ReadNewz extends Activity {
             Log.e(IDENTIFIER, "Failed to parse rss items from " + current, e);
         }
         
-        
-
+        rssItemIndex = 0;
+        updateText();
     }
 
-    public void togglePlayback(final View v) { }
+    private void updateText() {
+        String text = "No data";
+        if(rssItems!=null && rssItemIndex >= 0 && rssItems.size()>rssItemIndex) {
+            text =rssItems.get(rssItemIndex).getTitle() + " - " +rssItems.get(rssItemIndex).getDescription(); 
+        }
+        EditText editText = (EditText)findViewById(R.id.text);
+        editText.setText(text, TextView.BufferType.EDITABLE);
+    }
+    
+    public void previous(final View v) {
+        rssItemIndex--;
+        updateText();;
+    }
+    
+    public void next(final View v) {
+        rssItemIndex++;
+        updateText();;
+    }
+
+    public void playPause(final View v) { }
 
 // /**
 // * Called after initialization of TextToSpeech.

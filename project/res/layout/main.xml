@@ -11,17 +11,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="&lt;&lt;"
-                android:id="@+id/previous"/>
+                android:id="@+id/previous"
+                android:onClick="previous"/>
         <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="&gt; ||"
-                android:id="@+id/playPause"/>
+                android:id="@+id/playPause"
+                android:onClick="playPause"/>
         <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="&gt;&gt;"
-                android:id="@+id/next"/>
+                android:id="@+id/next"
+                android:onClick="next"/>
     </LinearLayout>
         <EditText
                 android:layout_width="match_parent"
