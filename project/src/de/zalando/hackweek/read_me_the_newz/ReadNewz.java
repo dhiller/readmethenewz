@@ -130,6 +130,8 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     public void playPause(final View v) {
         if (textToSpeech.isSpeaking()) {
             textToSpeech.stop();
+        } else {
+            updateText();
         }
     }
 
