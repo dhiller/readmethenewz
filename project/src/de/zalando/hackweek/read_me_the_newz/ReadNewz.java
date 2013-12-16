@@ -20,6 +20,8 @@ import android.app.Activity;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
@@ -90,6 +92,13 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             shouldSpeak = true;
             if (sentences.size() > sentenceIndex) {
                 textToSpeech.speak(sentences.get(sentenceIndex), TextToSpeech.QUEUE_FLUSH, ttsParams);
+            } else {
+                Handler refresh = new Handler(Looper.getMainLooper());
+                refresh.post(new Runnable() {
+                        public void run() {
+                            readNextItem();
+                        }
+                    });
             }
         }
 
@@ -110,6 +119,8 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
+        // Required for the TTSUtteranceProgressListener
+        // see http://stackoverflow.com/questions/20296792/tts-utteranceprogresslistener-not-being-called
         ttsParams = new HashMap<String, String>() {
 
             {
@@ -120,11 +131,11 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     }
 
     public void previous(final View v) {
-        readNextItem();
+        readPreviousItem();
     }
 
     public void next(final View v) {
-        readPreviousItem();
+        readNextItem();
     }
 
     public void playPause(final View v) {
@@ -207,12 +218,12 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     }
 
     private void readNextItem() {
-        rssItemIndex--;
+        rssItemIndex++;
         updateText();
     }
 
     private void readPreviousItem() {
-        rssItemIndex++;
+        rssItemIndex--;
         updateText();
     }
 
