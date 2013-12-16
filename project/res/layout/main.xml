@@ -26,11 +26,14 @@
                 android:id="@+id/next"
                 android:onClick="next"/>
     </LinearLayout>
-        <EditText
+        <TextView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:inputType="textMultiLine"
                 android:ems="10"
-                android:id="@+id/text" android:layout_gravity="center_vertical"/>
+                android:id="@+id/text" 
+                android:layout_gravity="center_vertical"
+                android:scrollbars="vertical"
+                android:maxLines="999999999"
+                />
 </LinearLayout>
 

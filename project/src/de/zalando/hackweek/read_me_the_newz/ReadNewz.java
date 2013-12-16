@@ -6,10 +6,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
-import android.widget.EditText;
-import android.widget.TextView;
 import org.xml.sax.SAXException;
 
 import android.app.Activity;
@@ -17,16 +16,19 @@ import android.app.Activity;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
+import android.speech.tts.TextToSpeech;
+
 import android.util.Log;
 
 import android.view.View;
+
+import android.widget.TextView;
 
 import nl.matshofman.saxrssreader.RssFeed;
 import nl.matshofman.saxrssreader.RssItem;
 import nl.matshofman.saxrssreader.RssReader;
 
-public class ReadNewz extends Activity {
-//    implements TextToSpeech.OnInitListener {
+public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
     private static final String[] urls = new String[] {
         "http://rss.slashdot.org/Slashdot/slashdot",
@@ -36,7 +38,8 @@ public class ReadNewz extends Activity {
 
     private ArrayList<RssItem> rssItems;
     private int rssItemIndex = -1;
-//    private TextToSpeech textToSpeech;
+    private TextToSpeech textToSpeech;
+    private boolean ttsEnabled;
 
     /**
      * Called when the activity is first created.
@@ -45,8 +48,7 @@ public class ReadNewz extends Activity {
     public void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        updateRSSItems();
-//        textToSpeech = new TextToSpeech(this, this);
+        textToSpeech = new TextToSpeech(this, this);
     }
 
     private void updateRSSItems() {
@@ -90,51 +92,67 @@ public class ReadNewz extends Activity {
         } catch (ExecutionException e) {
             Log.e(IDENTIFIER, "Failed to parse rss items from " + current, e);
         }
-        
+
         rssItemIndex = 0;
         updateText();
     }
 
     private void updateText() {
-        String text = "No data";
-        if(rssItems!=null && rssItemIndex >= 0 && rssItems.size()>rssItemIndex) {
-            text =rssItems.get(rssItemIndex).getTitle() + " - " +rssItems.get(rssItemIndex).getDescription(); 
+        if (textToSpeech.isSpeaking()) {
+            textToSpeech.stop();
         }
-        EditText editText = (EditText)findViewById(R.id.text);
-        editText.setText(text, TextView.BufferType.EDITABLE);
+
+        String text = "No data";
+        final boolean hasItem = rssItems != null && rssItemIndex >= 0 && rssItems.size() > rssItemIndex;
+        if (hasItem) {
+            text = rssItems.get(rssItemIndex).getTitle() + " - " + rssItems.get(rssItemIndex).getDescription();
+            if (ttsEnabled) {
+                textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+            }
+        }
+
+        TextView textView = (TextView) findViewById(R.id.text);
+        textView.setText(text, TextView.BufferType.EDITABLE);
     }
-    
+
     public void previous(final View v) {
         rssItemIndex--;
-        updateText();;
+        updateText();
+        ;
     }
-    
+
     public void next(final View v) {
         rssItemIndex++;
-        updateText();;
+        updateText();
+        ;
     }
 
-    public void playPause(final View v) { }
+    public void playPause(final View v) {
+        if (textToSpeech.isSpeaking()) {
+            textToSpeech.stop();
+        }
+    }
 
-// /**
-// * Called after initialization of TextToSpeech.
-// *
-// * @param  status
-// */
-// @Override
-// public void onInit(final int status) {
-// if (status != TextToSpeech.SUCCESS) {
-// Log.e(IDENTIFIER, "TextToSpeech Init failed!");
-// return;
-// }
-//
-// int result = textToSpeech.setLanguage(Locale.ENGLISH);
-// if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-// Log.e(IDENTIFIER, "Language ENGLISH not supported!");
-// return;
-// }
-//
-// textToSpeech.speak(rssItems.get(0).getTitle(), TextToSpeech.QUEUE_FLUSH, null);
-// textToSpeech.speak(rssItems.get(0).getContent(), TextToSpeech.QUEUE_FLUSH, null);
-// }
+    /**
+     * Called after initialization of TextToSpeech.
+     *
+     * @param  status
+     */
+    @Override
+    public void onInit(final int status) {
+        if (status != TextToSpeech.SUCCESS) {
+            Log.e(IDENTIFIER, "TextToSpeech Init failed!");
+            return;
+        }
+
+        int result = textToSpeech.setLanguage(Locale.ENGLISH);
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            Log.e(IDENTIFIER, "Language ENGLISH not supported!");
+            return;
+        }
+
+        ttsEnabled = true;
+
+        updateRSSItems();
+    }
 }
