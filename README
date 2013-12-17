@@ -1,4 +1,14 @@
-Libraries:
+After cloning, initialize git submodules:
+  git submodule init
+  git submodule update
 
-- https://github.com/matshofman/Android-RSS-Reader-Library.git
-- https://github.com/jhy/jsoup.git
+Maven Instructions: http://books.sonatype.com/mvnref-book/reference/android-dev.html
+
+Deploy and run on device:
+  mvn clean verify android:deploy android:run
+
+Libraries:
+  - jsoup (as Maven dependency)
+  - Android-RSS-Reader-Library (as git submodule)
+      https://github.com/matshofman/Android-RSS-Reader-Library.git
+
