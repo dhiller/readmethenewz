@@ -1,0 +1,6 @@
+[submodule "Android-RSS-Reader-Library"]
+	path = Android-RSS-Reader-Library
+	url = https://github.com/matshofman/Android-RSS-Reader-Library.git
+[submodule "jsoup"]
+	path = jsoup
+	url = https://github.com/jhy/jsoup.git
