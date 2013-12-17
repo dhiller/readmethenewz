@@ -57,6 +57,14 @@
             <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="@string/previousFeed"
+                    android:id="@+id/previousFeed" 
+                    android:enabled="false"
+                    android:onClick="previousFeed"
+                    />
+            <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="&lt;&lt;"
                     android:id="@+id/previous"
                     android:onClick="previous" android:layout_gravity="bottom" android:enabled="false"/>
@@ -72,6 +80,14 @@
                     android:text="&gt;&gt;"
                     android:id="@+id/next"
                     android:onClick="next" android:layout_gravity="bottom" android:enabled="false"/>
+            <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/nextFeed"
+                    android:id="@+id/nextFeed"
+                    android:onClick="nextFeed"
+                    android:enabled="false"
+                    />
         </LinearLayout>
     </LinearLayout>
 </RelativeLayout>

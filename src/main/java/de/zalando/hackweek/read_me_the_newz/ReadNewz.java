@@ -38,14 +38,15 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
     private static final String[] urls = new String[]{
             "http://rss.slashdot.org/Slashdot/slashdot",
-            "http://www.google.com/alerts/feeds/10782259317798652848/4797091171555319245", // Zalando news feed
+//            "http://www.google.com/alerts/feeds/10782259317798652848/4797091171555319245", // Zalando news feed
+            "http://feeds.wired.com/wired/index",
     };
     private static final String IDENTIFIER = "ReadNewz";
 
     private ArrayList<RssItem> rssItems;
+    private int rssFeedIndex = -1;
     private int rssItemIndex = -1;
     private TextToSpeech textToSpeech;
-    private boolean ttsEnabled;
     private final ItemPlayback itemPlayback = new ItemPlayback();
 
     /**
@@ -62,6 +63,20 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     protected void onPause() {
         super.onPause();
         itemPlayback.stopSpeaking();
+    }
+
+    public void nextFeed(final View v) {
+        rssFeedIndex++;
+        if (rssFeedIndex >= urls.length)
+            rssFeedIndex = 0;
+        updateRSSItems();
+    }
+
+    public void previousFeed(final View v) {
+        rssFeedIndex--;
+        if (rssFeedIndex < 0)
+            rssFeedIndex = urls.length - 1;
+        updateRSSItems();
     }
 
     public void previous(final View v) {
@@ -95,9 +110,10 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             Log.e(IDENTIFIER, "Language ENGLISH not supported!");
             return;
         }
-
-        ttsEnabled = true;
         
+        findViewById(R.id.previousFeed).setEnabled(true);
+        findViewById(R.id.nextFeed).setEnabled(true);
+
         itemPlayback.setTextToSpeech(textToSpeech);
         itemPlayback.setItemPlaybackListener(new ItemPlaybackListener() {
 
@@ -147,10 +163,11 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
         });
 
-        final int listenerSetResult = textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener(){
+        final int listenerSetResult = textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
 
             @Override
-            public void onStart(String utteranceId) {}
+            public void onStart(String utteranceId) {
+            }
 
             @Override
             public void onDone(String utteranceId) {
@@ -158,20 +175,25 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             }
 
             @Override
-            public void onError(String utteranceId) {}
+            public void onError(String utteranceId) {
+            }
         });
         Log.d(IDENTIFIER, "Result for setListener: " + listenerSetResult);
-        
+
+        rssFeedIndex = 0;
         updateRSSItems();
     }
 
     private void updateRSSItems() {
-
-        final String url = urls[0];
+        final String url = urls[rssFeedIndex];
+        
+        itemPlayback.stopSpeaking();
         final int firstPoint = url.indexOf(".");
         final String all = url.substring(firstPoint + 1, url.indexOf("/", firstPoint + 1));
         TextView textView = (TextView) findViewById(R.id.rssHost);
         textView.setText(all, TextView.BufferType.EDITABLE);
+        
+        setPlaybackCurrentSentence("");
 
         Log.d(IDENTIFIER, "Starting fetch of rss items from " + url);
 
@@ -228,25 +250,29 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     }
 
     private void setItemForPlayback() {
-        
+
         findViewById(R.id.previous).setEnabled(rssItemIndex > 0);
         findViewById(R.id.next).setEnabled(rssItemIndex < rssItems.size());
         findViewById(R.id.playPause).setEnabled(rssItems.size() > 0);
 
-        String text = "No data";
+        String title = "";
+        String text = "";
         final boolean hasItem = rssItems != null && rssItemIndex >= 0 && rssItems.size() > rssItemIndex;
         if (hasItem) {
             final RssItem currentItem = rssItems.get(rssItemIndex);
-
-            TextView textView = (TextView) findViewById(R.id.rssItemTitle);
-            textView.setText(Jsoup.parse(currentItem.getTitle()).text(), TextView.BufferType.EDITABLE);
-
+            title = Jsoup.parse(currentItem.getTitle()).text();
             text = Jsoup.parse(currentItem.getDescription()).text();
             itemPlayback.setItemForPlayback(currentItem);
             itemPlayback.startSpeaking();
         }
 
         setPlaybackCurrentSentence(text);
+        setTitle(title);
+    }
+
+    private void setTitle(String titleText) {
+        TextView textView = (TextView) findViewById(R.id.rssItemTitle);
+        textView.setText(titleText, TextView.BufferType.EDITABLE);
     }
 
     private void setPlaybackCurrentSentence(String text) {

@@ -4,4 +4,6 @@
     <string name="rssHost">&lt;...&gt;</string>
     <string name="rssItemTitle">&lt;...&gt;</string>
     <string name="status">Play/Pause</string>
+    <string name="previousFeed">|&lt;</string>
+    <string name="nextFeed">&gt;|</string>
 </resources>

@@ -22,7 +22,6 @@ class ItemPlayback {
     private HashMap<String, String> ttsParams;
     private TextToSpeech textToSpeech;
     private ItemPlaybackListener itemPlaybackListener = new ItemPlaybackListener();
-    private RssItem itemForPlayback;
     private String currentSentence;
 
     ItemPlayback() {
@@ -47,13 +46,13 @@ class ItemPlayback {
     }
 
     public boolean isSpeaking() {
-        return textToSpeech.isSpeaking();
+        return textToSpeech != null && textToSpeech.isSpeaking();
     }
 
     public void continueWithNextSentence() {
         if (!shouldSpeak)
             return;
-        itemPlaybackListener.finishedItem(sentenceIndex, sentences.size(), currentSentence);
+        itemPlaybackListener.finishedItem(sentenceIndex, numberOfSentences(), currentSentence);
         sentenceIndex++;
         startSpeaking();
     }
@@ -61,12 +60,12 @@ class ItemPlayback {
     public void startSpeaking() {
         stopSpeaking();
         shouldSpeak = true;
-        if (sentences.size() > sentenceIndex) {
+        if (numberOfSentences() > sentenceIndex) {
             currentSentence = sentences.get(sentenceIndex);
             textToSpeech.speak(currentSentence, TextToSpeech.QUEUE_FLUSH, ttsParams);
-            itemPlaybackListener.beganWith(sentenceIndex, sentences.size(), currentSentence);
+            itemPlaybackListener.beganWith(sentenceIndex, numberOfSentences(), currentSentence);
         } else {
-            itemPlaybackListener.finishedAll(sentences.size());
+            itemPlaybackListener.finishedAll(numberOfSentences());
         }
     }
 
@@ -74,8 +73,12 @@ class ItemPlayback {
         shouldSpeak = false;
         if (isSpeaking()) {
             textToSpeech.stop();
-            itemPlaybackListener.stoppedAt(sentenceIndex, sentences.size(), currentSentence);
+            itemPlaybackListener.stoppedAt(sentenceIndex, numberOfSentences(), currentSentence);
         }
+    }
+
+    public int numberOfSentences() {
+        return (sentences!=null?sentences.size():0);
     }
 
     public void setSentences(ArrayList<String> sentences) {
@@ -103,7 +106,6 @@ class ItemPlayback {
         sentences.addAll(lines);
         
         this.setSentences(sentences);
-        this.itemForPlayback = itemForPlayback;
     }
 
 }
