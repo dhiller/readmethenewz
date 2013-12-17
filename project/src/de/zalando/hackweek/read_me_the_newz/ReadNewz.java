@@ -38,9 +38,9 @@ import nl.matshofman.saxrssreader.RssReader;
 
 public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
-    private static final String[] urls = new String[] {
-        "http://rss.slashdot.org/Slashdot/slashdot",
-        "http://www.google.com/alerts/feeds/10782259317798652848/4797091171555319245", // Zalando news feed
+    private static final String[] urls = new String[]{
+            "http://rss.slashdot.org/Slashdot/slashdot",
+            "http://www.google.com/alerts/feeds/10782259317798652848/4797091171555319245", // Zalando news feed
     };
     private static final String IDENTIFIER = "ReadNewz";
 
@@ -49,42 +49,41 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     private TextToSpeech textToSpeech;
     private boolean ttsEnabled;
     private ReadNewz.TTSUtteranceProgressListener ttsUtteranceProgressListener = new TTSUtteranceProgressListener(
-            new ArrayList<String>());
+    );
+    private final SentenceSpeaker sentenceSpeaker = new SentenceSpeaker();
 
-    private final UUID uuid = UUID.randomUUID();
-    private HashMap<String, String> ttsParams;
+    class SentenceSpeaker {
 
-    class TTSUtteranceProgressListener extends UtteranceProgressListener {
-
-        private final ArrayList<String> sentences;
+        private ArrayList<String> sentences;
         private int sentenceIndex = 0;
         private boolean shouldSpeak = true;
 
-        TTSUtteranceProgressListener(final ArrayList<String> sentences) {
-            this.sentences = sentences;
-        }
 
-        @Override
-        public void onStart(final String utteranceId) {
-            Log.d(IDENTIFIER, "onStart: " + utteranceId);
-        }
+        private final UUID uuid = UUID.randomUUID();
+        private HashMap<String, String> ttsParams;
 
-        @Override
-        public void onDone(final String utteranceId) {
-            Log.d(IDENTIFIER, "onDone: " + utteranceId);
-            if (shouldSpeak) {
-                sentenceIndex++;
-                speakCurrentSentence();
-            }
-        }
+        SentenceSpeaker() {
 
-        @Override
-        public void onError(final String utteranceId) {
-            Log.d(IDENTIFIER, "onError: " + utteranceId);
+            // Required for the TTSUtteranceProgressListener
+            // see http://stackoverflow.com/questions/20296792/tts-utteranceprogresslistener-not-being-called
+            ttsParams = new HashMap<String, String>() {
+
+                {
+                    put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, uuid.toString());
+                }
+            };
+
         }
 
         public boolean isSpeaking() {
             return textToSpeech.isSpeaking();
+        }
+
+        public void speakNextSentence() {
+            if (!shouldSpeak)
+                return;
+            sentenceIndex++;
+            speakCurrentSentence();
         }
 
         public void speakCurrentSentence() {
@@ -95,10 +94,10 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             } else {
                 Handler refresh = new Handler(Looper.getMainLooper());
                 refresh.post(new Runnable() {
-                        public void run() {
-                            readNextItem();
-                        }
-                    });
+                    public void run() {
+                        readNextItem();
+                    }
+                });
             }
         }
 
@@ -107,6 +106,39 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             if (isSpeaking()) {
                 textToSpeech.stop();
             }
+        }
+
+        public void setSentences(ArrayList<String> sentences) {
+            this.sentences = sentences;
+            this.sentenceIndex = 0;
+        }
+
+        public void toggleSpeaking() {
+            if (isSpeaking()) {
+                stopSpeaking();
+            } else {
+                speakCurrentSentence();
+            }
+        }
+    }
+
+
+    class TTSUtteranceProgressListener extends UtteranceProgressListener {
+
+        @Override
+        public void onStart(final String utteranceId) {
+            Log.d(IDENTIFIER, "onStart: " + utteranceId);
+        }
+
+        @Override
+        public void onDone(final String utteranceId) {
+            Log.d(IDENTIFIER, "onDone: " + utteranceId);
+            sentenceSpeaker.speakNextSentence();
+        }
+
+        @Override
+        public void onError(final String utteranceId) {
+            Log.d(IDENTIFIER, "onError: " + utteranceId);
         }
 
     }
@@ -118,15 +150,6 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     public void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-
-        // Required for the TTSUtteranceProgressListener
-        // see http://stackoverflow.com/questions/20296792/tts-utteranceprogresslistener-not-being-called
-        ttsParams = new HashMap<String, String>() {
-
-            {
-                put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, uuid.toString());
-            }
-        };
         textToSpeech = new TextToSpeech(this, this);
     }
 
@@ -139,11 +162,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     }
 
     public void playPause(final View v) {
-        if (ttsUtteranceProgressListener.isSpeaking()) {
-            ttsUtteranceProgressListener.stopSpeaking();
-        } else {
-            ttsUtteranceProgressListener.speakCurrentSentence();
-        }
+        sentenceSpeaker.toggleSpeaking();
     }
 
     // TextToSpeech.OnInitListener
@@ -151,7 +170,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     /**
      * Called after initialization of TextToSpeech.
      *
-     * @param  status
+     * @param status
      */
     @Override
     public void onInit(final int status) {
@@ -168,6 +187,9 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
         ttsEnabled = true;
 
+        final int listenerSetResult = textToSpeech.setOnUtteranceProgressListener(ttsUtteranceProgressListener);
+        Log.d(IDENTIFIER, "Result for setListener: " + listenerSetResult);
+        
         updateRSSItems();
     }
 
@@ -184,29 +206,29 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
         try {
             rssItems = new AsyncTask<URL, Integer, ArrayList<RssItem>>() {
-                    @Override
-                    protected ArrayList<RssItem> doInBackground(final URL... params) {
-                        final ArrayList<RssItem> result = new ArrayList<RssItem>();
-                        for (URL u : params) {
-                            Log.d(IDENTIFIER, "doInBackground: Starting fetch of rss items from " + u);
+                @Override
+                protected ArrayList<RssItem> doInBackground(final URL... params) {
+                    final ArrayList<RssItem> result = new ArrayList<RssItem>();
+                    for (URL u : params) {
+                        Log.d(IDENTIFIER, "doInBackground: Starting fetch of rss items from " + u);
 
-                            try {
-                                final RssFeed feed = RssReader.read(u);
-                                Log.d(IDENTIFIER, "Read items from " + u);
+                        try {
+                            final RssFeed feed = RssReader.read(u);
+                            Log.d(IDENTIFIER, "Read items from " + u);
 
-                                final ArrayList<RssItem> items = feed.getRssItems();
-                                Log.d(IDENTIFIER, "Got " + items.size() + " items from " + u);
-                                result.addAll(items);
-                            } catch (SAXException e) {
-                                Log.e(IDENTIFIER, "Failed to parse rss items from " + u, e);
-                            } catch (IOException e) {
-                                Log.e(IDENTIFIER, "IOException from " + u, e);
-                            }
+                            final ArrayList<RssItem> items = feed.getRssItems();
+                            Log.d(IDENTIFIER, "Got " + items.size() + " items from " + u);
+                            result.addAll(items);
+                        } catch (SAXException e) {
+                            Log.e(IDENTIFIER, "Failed to parse rss items from " + u, e);
+                        } catch (IOException e) {
+                            Log.e(IDENTIFIER, "IOException from " + u, e);
                         }
-
-                        return result;
                     }
-                }.execute(current).get();
+
+                    return result;
+                }
+            }.execute(current).get();
         } catch (InterruptedException e) {
             Log.e(IDENTIFIER, "Failed to parse rss items from " + current, e);
         } catch (ExecutionException e) {
@@ -242,16 +264,10 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                 // TODO Add date of article
                 sentences.add(title); // + " - " + new SimpleDateFormat("") currentItem.getPubDate());
                 sentences.addAll(Arrays.asList(description.split("\\. ")));
+                sentenceSpeaker.setSentences(sentences);
 
-                if (ttsUtteranceProgressListener != null) {
-                    ttsUtteranceProgressListener.stopSpeaking();
-                }
-
-                ttsUtteranceProgressListener = new TTSUtteranceProgressListener(sentences);
-
-                final int listenerSetResult = textToSpeech.setOnUtteranceProgressListener(ttsUtteranceProgressListener);
-                Log.d(IDENTIFIER, "Result for setListener: " + listenerSetResult);
-                ttsUtteranceProgressListener.speakCurrentSentence();
+                sentenceSpeaker.stopSpeaking();
+                sentenceSpeaker.speakCurrentSentence();
             }
         }
 
