@@ -6,8 +6,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
@@ -48,7 +46,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     private int rssItemIndex = -1;
     private TextToSpeech textToSpeech;
     private boolean ttsEnabled;
-    private final SentenceSpeaker sentenceSpeaker = new SentenceSpeaker();
+    private final ItemPlayback itemPlayback = new ItemPlayback();
 
     /**
      * Called when the activity is first created.
@@ -61,15 +59,15 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     }
 
     public void previous(final View v) {
-        readPreviousItem();
+        playbackPreviousItem();
     }
 
     public void next(final View v) {
-        readNextItem();
+        playbackNextItem();
     }
 
     public void playPause(final View v) {
-        sentenceSpeaker.toggleSpeaking();
+        itemPlayback.toggleSpeaking();
     }
 
     // TextToSpeech.OnInitListener
@@ -94,21 +92,27 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
         ttsEnabled = true;
         
-        sentenceSpeaker.setTextToSpeech(textToSpeech);
-        sentenceSpeaker.setSentenceSpeakerListener(new SentenceSpeakerListener(){
+        itemPlayback.setTextToSpeech(textToSpeech);
+        itemPlayback.setItemPlaybackListener(new ItemPlaybackListener() {
 
             @Override
-            void beganWith(int index, int total) {
+            void beganWith(int index, int total, final String sentence) {
                 setStatusText("Reading", index, total);
+                Handler refresh = new Handler(Looper.getMainLooper());
+                refresh.post(new Runnable() {
+                    public void run() {
+                        setPlaybackCurrentSentence(sentence);
+                    }
+                });
             }
 
             @Override
-            void stoppedAt(int index, int total) {
+            void stoppedAt(int index, int total, String sentence) {
                 setStatusText("Stopped", index, total);
             }
 
             @Override
-            void finishedItem(int index, int total) {
+            void finishedItem(int index, int total, String sentence) {
                 setStatusText("Finished", index, total);
             }
 
@@ -117,7 +121,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                 Handler refresh = new Handler(Looper.getMainLooper());
                 refresh.post(new Runnable() {
                     public void run() {
-                        readNextItem();
+                        playbackNextItem();
                     }
                 });
             }
@@ -128,8 +132,9 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                     public void run() {
                         TextView textView = (TextView) findViewById(R.id.status);
                         textView.setText(status, TextView.BufferType.EDITABLE);
-                        ProgressBar bar = (ProgressBar)findViewById(R.id.readProgress);
+                        ProgressBar bar = (ProgressBar) findViewById(R.id.readProgress);
                         bar.setProgress(index);
+                        bar.setMax(total);
                     }
                 });
             }
@@ -143,7 +148,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
             @Override
             public void onDone(String utteranceId) {
-                sentenceSpeaker.speakNextSentence();
+                itemPlayback.continueWithNextSentence();
             }
 
             @Override
@@ -203,50 +208,42 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         }
 
         rssItemIndex = 0;
-        updateText();
+        setItemForPlayback();
     }
 
-    private void readNextItem() {
+    private void playbackNextItem() {
         rssItemIndex++;
-        updateText();
+        setItemForPlayback();
     }
 
-    private void readPreviousItem() {
+    private void playbackPreviousItem() {
         rssItemIndex--;
-        updateText();
+        setItemForPlayback();
     }
 
-    private void updateText() {
-        ProgressBar bar = (ProgressBar)findViewById(R.id.readProgress);
-        bar.setIndeterminate(false);
+    private void setItemForPlayback() {
+        
+        findViewById(R.id.previous).setEnabled(rssItemIndex > 0);
+        findViewById(R.id.next).setEnabled(rssItemIndex < rssItems.size());
+        findViewById(R.id.playPause).setEnabled(rssItems.size() > 0);
 
         String text = "No data";
         final boolean hasItem = rssItems != null && rssItemIndex >= 0 && rssItems.size() > rssItemIndex;
         if (hasItem) {
             final RssItem currentItem = rssItems.get(rssItemIndex);
-            final String title = Jsoup.parse(currentItem.getTitle()).text();
 
             TextView textView = (TextView) findViewById(R.id.rssItemTitle);
-            textView.setText(title, TextView.BufferType.EDITABLE);
+            textView.setText(Jsoup.parse(currentItem.getTitle()).text(), TextView.BufferType.EDITABLE);
 
-            final String description = Jsoup.parse(currentItem.getDescription()).text();
-            text = description;
-            if (ttsEnabled) {
-                final ArrayList<String> sentences = new ArrayList<String>();
-
-                // TODO Add date of article
-                sentences.add(title); // + " - " + new SimpleDateFormat("") currentItem.getPubDate());
-                final List<String> lines = Arrays.asList(description.split("\\. "));
-                sentences.addAll(lines);
-                sentenceSpeaker.setSentences(sentences);
-                
-                bar.setMax(lines.size());
-
-                sentenceSpeaker.stopSpeaking();
-                sentenceSpeaker.speakCurrentSentence();
-            }
+            text = Jsoup.parse(currentItem.getDescription()).text();
+            itemPlayback.setItemForPlayback(currentItem);
+            itemPlayback.startSpeaking();
         }
 
+        setPlaybackCurrentSentence(text);
+    }
+
+    private void setPlaybackCurrentSentence(String text) {
         TextView textView = (TextView) findViewById(R.id.text);
         textView.setText(text, TextView.BufferType.EDITABLE);
     }

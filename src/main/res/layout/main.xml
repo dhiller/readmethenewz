@@ -36,7 +36,7 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content" 
             android:layout_alignParentBottom="true"
-            android:layout_alignTop="@+id/text" android:gravity="center_horizontal|bottom">
+            android:gravity="center_horizontal|bottom">
         <ProgressBar
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="fill_parent"
@@ -59,19 +59,19 @@
                     android:layout_height="wrap_content"
                     android:text="&lt;&lt;"
                     android:id="@+id/previous"
-                    android:onClick="previous" android:layout_gravity="bottom"/>
+                    android:onClick="previous" android:layout_gravity="bottom" android:enabled="false"/>
             <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="&gt; ||"
                     android:id="@+id/playPause"
-                    android:onClick="playPause" android:layout_gravity="bottom"/>
+                    android:onClick="playPause" android:layout_gravity="bottom" android:enabled="false"/>
             <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="&gt;&gt;"
                     android:id="@+id/next"
-                    android:onClick="next" android:layout_gravity="bottom"/>
+                    android:onClick="next" android:layout_gravity="bottom" android:enabled="false"/>
         </LinearLayout>
     </LinearLayout>
 </RelativeLayout>
