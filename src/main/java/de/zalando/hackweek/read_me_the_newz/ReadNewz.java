@@ -58,6 +58,12 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         textToSpeech = new TextToSpeech(this, this);
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        itemPlayback.stopSpeaking();
+    }
+
     public void previous(final View v) {
         playbackPreviousItem();
     }
