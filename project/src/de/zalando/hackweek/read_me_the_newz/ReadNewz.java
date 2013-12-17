@@ -48,8 +48,6 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     private int rssItemIndex = -1;
     private TextToSpeech textToSpeech;
     private boolean ttsEnabled;
-    private ReadNewz.TTSUtteranceProgressListener ttsUtteranceProgressListener = new TTSUtteranceProgressListener(
-    );
     private final SentenceSpeaker sentenceSpeaker = new SentenceSpeaker();
 
     class SentenceSpeaker {
@@ -57,10 +55,9 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         private ArrayList<String> sentences;
         private int sentenceIndex = 0;
         private boolean shouldSpeak = true;
-
-
         private final UUID uuid = UUID.randomUUID();
         private HashMap<String, String> ttsParams;
+        private TextToSpeech textToSpeech;
 
         SentenceSpeaker() {
 
@@ -73,6 +70,10 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                 }
             };
 
+        }
+
+        public void setTextToSpeech(TextToSpeech textToSpeech) {
+            this.textToSpeech = textToSpeech;
         }
 
         public boolean isSpeaking() {
@@ -122,27 +123,6 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         }
     }
 
-
-    class TTSUtteranceProgressListener extends UtteranceProgressListener {
-
-        @Override
-        public void onStart(final String utteranceId) {
-            Log.d(IDENTIFIER, "onStart: " + utteranceId);
-        }
-
-        @Override
-        public void onDone(final String utteranceId) {
-            Log.d(IDENTIFIER, "onDone: " + utteranceId);
-            sentenceSpeaker.speakNextSentence();
-        }
-
-        @Override
-        public void onError(final String utteranceId) {
-            Log.d(IDENTIFIER, "onError: " + utteranceId);
-        }
-
-    }
-
     /**
      * Called when the activity is first created.
      */
@@ -186,8 +166,22 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         }
 
         ttsEnabled = true;
+        
+        sentenceSpeaker.setTextToSpeech(textToSpeech);
 
-        final int listenerSetResult = textToSpeech.setOnUtteranceProgressListener(ttsUtteranceProgressListener);
+        final int listenerSetResult = textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener(){
+
+            @Override
+            public void onStart(String utteranceId) {}
+
+            @Override
+            public void onDone(String utteranceId) {
+                sentenceSpeaker.speakNextSentence();
+            }
+
+            @Override
+            public void onError(String utteranceId) {}
+        });
         Log.d(IDENTIFIER, "Result for setListener: " + listenerSetResult);
         
         updateRSSItems();
