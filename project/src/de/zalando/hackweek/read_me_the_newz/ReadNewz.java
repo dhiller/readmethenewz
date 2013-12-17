@@ -7,9 +7,7 @@ import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import org.jsoup.Jsoup;
@@ -48,80 +46,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     private int rssItemIndex = -1;
     private TextToSpeech textToSpeech;
     private boolean ttsEnabled;
-    private final SentenceSpeaker sentenceSpeaker = new SentenceSpeaker();
-
-    class SentenceSpeaker {
-
-        private ArrayList<String> sentences;
-        private int sentenceIndex = 0;
-        private boolean shouldSpeak = true;
-        private final UUID uuid = UUID.randomUUID();
-        private HashMap<String, String> ttsParams;
-        private TextToSpeech textToSpeech;
-
-        SentenceSpeaker() {
-
-            // Required for the TTSUtteranceProgressListener
-            // see http://stackoverflow.com/questions/20296792/tts-utteranceprogresslistener-not-being-called
-            ttsParams = new HashMap<String, String>() {
-
-                {
-                    put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, uuid.toString());
-                }
-            };
-
-        }
-
-        public void setTextToSpeech(TextToSpeech textToSpeech) {
-            this.textToSpeech = textToSpeech;
-        }
-
-        public boolean isSpeaking() {
-            return textToSpeech.isSpeaking();
-        }
-
-        public void speakNextSentence() {
-            if (!shouldSpeak)
-                return;
-            sentenceIndex++;
-            speakCurrentSentence();
-        }
-
-        public void speakCurrentSentence() {
-            stopSpeaking();
-            shouldSpeak = true;
-            if (sentences.size() > sentenceIndex) {
-                textToSpeech.speak(sentences.get(sentenceIndex), TextToSpeech.QUEUE_FLUSH, ttsParams);
-            } else {
-                Handler refresh = new Handler(Looper.getMainLooper());
-                refresh.post(new Runnable() {
-                    public void run() {
-                        readNextItem();
-                    }
-                });
-            }
-        }
-
-        public void stopSpeaking() {
-            shouldSpeak = false;
-            if (isSpeaking()) {
-                textToSpeech.stop();
-            }
-        }
-
-        public void setSentences(ArrayList<String> sentences) {
-            this.sentences = sentences;
-            this.sentenceIndex = 0;
-        }
-
-        public void toggleSpeaking() {
-            if (isSpeaking()) {
-                stopSpeaking();
-            } else {
-                speakCurrentSentence();
-            }
-        }
-    }
+    private final SentenceSpeaker sentenceSpeaker = new SentenceSpeaker(this);
 
     /**
      * Called when the activity is first created.
@@ -168,6 +93,17 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         ttsEnabled = true;
         
         sentenceSpeaker.setTextToSpeech(textToSpeech);
+        sentenceSpeaker.setSentenceSpeakerListener(new SentenceSpeakerListener(){
+            @Override
+            void finishedAll(int total) {
+                Handler refresh = new Handler(Looper.getMainLooper());
+                refresh.post(new Runnable() {
+                    public void run() {
+                        readNextItem();
+                    }
+                });
+            }
+        });
 
         final int listenerSetResult = textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener(){
 
