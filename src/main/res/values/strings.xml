@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ReadMeTheNewz</string>
+    <string name="rssHost">&lt;...&gt;</string>
+    <string name="rssItemTitle">&lt;...&gt;</string>
+    <string name="status">Play/Pause</string>
 </resources>

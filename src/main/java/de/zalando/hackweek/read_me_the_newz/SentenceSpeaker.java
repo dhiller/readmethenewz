@@ -11,7 +11,6 @@ import java.util.UUID;
 */
 class SentenceSpeaker {
 
-    private ReadNewz readNewz;
     private ArrayList<String> sentences;
     private int sentenceIndex = 0;
     private boolean shouldSpeak = true;
@@ -20,9 +19,7 @@ class SentenceSpeaker {
     private TextToSpeech textToSpeech;
     private SentenceSpeakerListener sentenceSpeakerListener = new SentenceSpeakerListener();
 
-    SentenceSpeaker(ReadNewz readNewz) {
-        this.readNewz = readNewz;
-
+    SentenceSpeaker() {
         // Required for SUtteranceProgressListener
         // see http://stackoverflow.com/questions/20296792/tts-utteranceprogresslistener-not-being-called
         ttsParams = new HashMap<String, String>() {
@@ -31,7 +28,6 @@ class SentenceSpeaker {
                 put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, uuid.toString());
             }
         };
-
     }
 
     public void setTextToSpeech(TextToSpeech textToSpeech) {
@@ -51,6 +47,7 @@ class SentenceSpeaker {
     public void speakNextSentence() {
         if (!shouldSpeak)
             return;
+        sentenceSpeakerListener.finishedItem(sentenceIndex, sentences.size());
         sentenceIndex++;
         speakCurrentSentence();
     }
@@ -60,6 +57,7 @@ class SentenceSpeaker {
         shouldSpeak = true;
         if (sentences.size() > sentenceIndex) {
             textToSpeech.speak(sentences.get(sentenceIndex), TextToSpeech.QUEUE_FLUSH, ttsParams);
+            sentenceSpeakerListener.beganWith(sentenceIndex, sentences.size());
         } else {
             sentenceSpeakerListener.finishedAll(sentences.size());
         }
@@ -69,6 +67,7 @@ class SentenceSpeaker {
         shouldSpeak = false;
         if (isSpeaking()) {
             textToSpeech.stop();
+            sentenceSpeakerListener.stoppedAt(sentenceIndex, sentences.size());
         }
     }
 

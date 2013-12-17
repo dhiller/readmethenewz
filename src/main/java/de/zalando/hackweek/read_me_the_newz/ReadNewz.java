@@ -7,9 +7,11 @@ import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
+import android.widget.ProgressBar;
 import org.jsoup.Jsoup;
 
 import org.xml.sax.SAXException;
@@ -46,7 +48,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     private int rssItemIndex = -1;
     private TextToSpeech textToSpeech;
     private boolean ttsEnabled;
-    private final SentenceSpeaker sentenceSpeaker = new SentenceSpeaker(this);
+    private final SentenceSpeaker sentenceSpeaker = new SentenceSpeaker();
 
     /**
      * Called when the activity is first created.
@@ -94,6 +96,22 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         
         sentenceSpeaker.setTextToSpeech(textToSpeech);
         sentenceSpeaker.setSentenceSpeakerListener(new SentenceSpeakerListener(){
+
+            @Override
+            void beganWith(int index, int total) {
+                setStatusText("Reading", index, total);
+            }
+
+            @Override
+            void stoppedAt(int index, int total) {
+                setStatusText("Stopped", index, total);
+            }
+
+            @Override
+            void finishedItem(int index, int total) {
+                setStatusText("Finished", index, total);
+            }
+
             @Override
             void finishedAll(int total) {
                 Handler refresh = new Handler(Looper.getMainLooper());
@@ -103,6 +121,19 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                     }
                 });
             }
+
+            private void setStatusText(final String status, final int index, final int total) {
+                Handler refresh = new Handler(Looper.getMainLooper());
+                refresh.post(new Runnable() {
+                    public void run() {
+                        TextView textView = (TextView) findViewById(R.id.status);
+                        textView.setText(status, TextView.BufferType.EDITABLE);
+                        ProgressBar bar = (ProgressBar)findViewById(R.id.readProgress);
+                        bar.setProgress(index);
+                    }
+                });
+            }
+
         });
 
         final int listenerSetResult = textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener(){
@@ -125,13 +156,19 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
     private void updateRSSItems() {
 
-        Log.d(IDENTIFIER, "Starting fetch of rss items from " + urls[0]);
+        final String url = urls[0];
+        final int firstPoint = url.indexOf(".");
+        final String all = url.substring(firstPoint + 1, url.indexOf("/", firstPoint + 1));
+        TextView textView = (TextView) findViewById(R.id.rssHost);
+        textView.setText(all, TextView.BufferType.EDITABLE);
+
+        Log.d(IDENTIFIER, "Starting fetch of rss items from " + url);
 
         URL current = null;
         try {
-            current = new URL(urls[0]);
+            current = new URL(url);
         } catch (MalformedURLException e) {
-            Log.e(IDENTIFIER, "Failed to create URL from " + urls[0], e);
+            Log.e(IDENTIFIER, "Failed to create URL from " + url, e);
         }
 
         try {
@@ -180,21 +217,30 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     }
 
     private void updateText() {
+        ProgressBar bar = (ProgressBar)findViewById(R.id.readProgress);
+        bar.setIndeterminate(false);
 
         String text = "No data";
         final boolean hasItem = rssItems != null && rssItemIndex >= 0 && rssItems.size() > rssItemIndex;
         if (hasItem) {
             final RssItem currentItem = rssItems.get(rssItemIndex);
             final String title = Jsoup.parse(currentItem.getTitle()).text();
+
+            TextView textView = (TextView) findViewById(R.id.rssItemTitle);
+            textView.setText(title, TextView.BufferType.EDITABLE);
+
             final String description = Jsoup.parse(currentItem.getDescription()).text();
-            text = title + " - " + description;
+            text = description;
             if (ttsEnabled) {
                 final ArrayList<String> sentences = new ArrayList<String>();
 
                 // TODO Add date of article
                 sentences.add(title); // + " - " + new SimpleDateFormat("") currentItem.getPubDate());
-                sentences.addAll(Arrays.asList(description.split("\\. ")));
+                final List<String> lines = Arrays.asList(description.split("\\. "));
+                sentences.addAll(lines);
                 sentenceSpeaker.setSentences(sentences);
+                
+                bar.setMax(lines.size());
 
                 sentenceSpeaker.stopSpeaking();
                 sentenceSpeaker.speakCurrentSentence();
