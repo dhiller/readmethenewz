@@ -96,7 +96,7 @@ class ItemPlayback {
 
         // TODO Add date of article
         sentences.add(title);
-        final List<String> lines = Arrays.asList(description.split("\\. "));
+        final List<String> lines = Arrays.asList(description.replaceAll("([\\.?!]\"?) ","$1\n").split("\n"));
         sentences.addAll(lines);
         
         this.setSentences(sentences);
