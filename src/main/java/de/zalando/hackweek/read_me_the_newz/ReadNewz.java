@@ -4,7 +4,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
@@ -28,46 +27,6 @@ import android.widget.TextView;
 import nl.matshofman.saxrssreader.RssItem;
 
 public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
-    
-    static class RssFeed {
-        
-        private final String url;
-        private final String description;
-        private final Locale locale;
-        
-        RssFeed(String url) {
-            this(url, getTopLevelDomain(url), Locale.ENGLISH);
-        }
-
-        RssFeed(String url, String description, Locale locale) {
-            this.url = url;
-            this.description = description;
-            this.locale = locale;
-        }
-
-        private static String getTopLevelDomain(String url) {
-            final int firstPoint = url.indexOf(".");
-            return url.substring(firstPoint + 1, url.indexOf("/", firstPoint + 1));
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        public Locale getLanguage() {
-            return locale;
-        }
-    }
-    
-    private static final List<RssFeed> feeds = Arrays.asList(
-            new RssFeed("http://heise.de.feedsportal.com/c/35207/f/653901/index.rss","heise.de",Locale.GERMAN),
-            new RssFeed("http://rss.slashdot.org/Slashdot/slashdot"),
-            new RssFeed("http://feeds.wired.com/wired/index")
-    );
 
     private static final String ID = "ReadNewz";
 
@@ -75,12 +34,14 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     private final ItemPlaybackFeedBackProvider itemPlaybackFeedBackProvider = new ItemPlaybackFeedBackProvider();
 
     private TextToSpeech textToSpeech;
+    private boolean shouldSpeak = true;
+
+    private List<RssFeed> rssFeeds;
+    private int rssFeedIndex = 0;
 
     private ArrayList<RssItem> rssItems;
-    private int rssFeedIndex = 0;
     private int rssItemIndex = 0;
     private int rssItemSentenceIndex = 0;
-    private boolean shouldSpeak = true;
 
     // --- Application lifecycle callbacks ---
 
@@ -93,16 +54,18 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         Log.d(ID, "onCreate");
         setContentView(R.layout.main);
         
-        if(savedInstanceState!=null) {
+        rssFeeds = RssFeed.getFeeds();
+
+        if (savedInstanceState != null) {
             rssFeedIndex = savedInstanceState.getInt("rssFeedIndex");
             rssItemIndex = savedInstanceState.getInt("rssItemIndex");
             rssItemSentenceIndex = savedInstanceState.getInt("rssItemSentenceIndex");
             shouldSpeak = savedInstanceState.getBoolean("shouldSpeak");
         }
-        
+
         if (textToSpeech == null)
             textToSpeech = new TextToSpeech(this, this);
-        
+
     }
 
     @Override
@@ -116,7 +79,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         super.onSaveInstanceState(outState);
         Log.d(ID, "onSaveInstanceState");
         outState.putInt("rssFeedIndex", rssFeedIndex);
-        outState.putInt("rssItemIndex",rssItemIndex);
+        outState.putInt("rssItemIndex", rssItemIndex);
         outState.putInt("rssItemSentenceIndex", rssItemSentenceIndex);
         outState.putBoolean("shouldSpeak", shouldSpeak);
     }
@@ -192,7 +155,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
     public void nextFeed(final View v) {
         rssFeedIndex++;
-        if (rssFeedIndex >= feeds.size())
+        if (rssFeedIndex >= rssFeeds.size())
             rssFeedIndex = 0;
         updateRSSItems();
     }
@@ -200,7 +163,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     public void previousFeed(final View v) {
         rssFeedIndex--;
         if (rssFeedIndex < 0)
-            rssFeedIndex = feeds.size() - 1;
+            rssFeedIndex = rssFeeds.size() - 1;
         updateRSSItems();
     }
 
@@ -216,16 +179,16 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         shouldSpeak = !shouldSpeak;
         itemPlayback.toggleSpeaking();
     }
-    
+
     // --- Others ---
 
     private void updateRSSItems() {
-        final RssFeed rssFeed = feeds.get(rssFeedIndex);
+        final RssFeed rssFeed = rssFeeds.get(rssFeedIndex);
         final String url = rssFeed.getUrl();
-        
+
         final Locale language = rssFeed.getLanguage();
         if (setLanguage(language)) {
-            setPlaybackCurrentSentence("Language "+ language + "not supported!");
+            setPlaybackCurrentSentence("Language " + language + "not supported!");
             return;
         }
 
@@ -255,13 +218,13 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
     private void playbackNextItem() {
         rssItemIndex++;
-        rssItemSentenceIndex=0;
+        rssItemSentenceIndex = 0;
         setItemForPlayback();
     }
 
     private void playbackPreviousItem() {
         rssItemIndex--;
-        rssItemSentenceIndex=0;
+        rssItemSentenceIndex = 0;
         setItemForPlayback();
     }
 
@@ -280,13 +243,13 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             text = Jsoup.parse(currentItem.getDescription()).text();
             itemPlayback.setItemForPlayback(currentItem);
             itemPlayback.setSentenceIndex(rssItemSentenceIndex);
-            if(shouldSpeak)
+            if (shouldSpeak)
                 itemPlayback.startSpeaking();
         }
 
         setPlaybackCurrentSentence(text);
         setTitle(title);
-        setStatusText(shouldSpeak?"Reading":"Paused",rssItemSentenceIndex,itemPlayback.numberOfSentences());
+        setStatusText(shouldSpeak ? "Reading" : "Paused", rssItemSentenceIndex, itemPlayback.numberOfSentences());
         setPlaybackCurrentSentence(itemPlayback.getCurrentSentence());
     }
 
