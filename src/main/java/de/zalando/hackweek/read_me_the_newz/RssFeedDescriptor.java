@@ -7,27 +7,27 @@ import java.util.Locale;
 /**
 * @author dhiller
 */
-class RssFeed {
+class RssFeedDescriptor {
 
     private final String url;
     private final String description;
     private final Locale locale;
 
-    RssFeed(String url) {
+    RssFeedDescriptor(String url) {
         this(url, getTopLevelDomain(url), Locale.ENGLISH);
     }
 
-    RssFeed(String url, String description, Locale locale) {
+    RssFeedDescriptor(String url, String description, Locale locale) {
         this.url = url;
         this.description = description;
         this.locale = locale;
     }
 
-    public static List<RssFeed> getFeeds() {
+    public static List<RssFeedDescriptor> getFeeds() {
         return Arrays.asList(
-                new RssFeed("http://heise.de.feedsportal.com/c/35207/f/653901/index.rss", "heise.de", Locale.GERMAN),
-                new RssFeed("http://rss.slashdot.org/Slashdot/slashdot"),
-                new RssFeed("http://feeds.wired.com/wired/index")
+                new RssFeedDescriptor("http://heise.de.feedsportal.com/c/35207/f/653901/index.rss", "heise.de", Locale.GERMAN),
+                new RssFeedDescriptor("http://rss.slashdot.org/Slashdot/slashdot"),
+                new RssFeedDescriptor("http://feeds.wired.com/wired/index")
         );
     }
 
