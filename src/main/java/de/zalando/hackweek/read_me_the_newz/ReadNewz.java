@@ -4,6 +4,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
@@ -26,15 +28,51 @@ import android.widget.TextView;
 import nl.matshofman.saxrssreader.RssItem;
 
 public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
+    
+    static class RssFeed {
+        
+        private final String url;
+        private final String description;
+        private final Locale locale;
+        
+        RssFeed(String url) {
+            this(url, getTopLevelDomain(url), Locale.ENGLISH);
+        }
 
-    private static final String[] urls = new String[]{
-            "http://rss.slashdot.org/Slashdot/slashdot",
-//            "http://www.google.com/alerts/feeds/10782259317798652848/4797091171555319245", // Zalando news feed
-            "http://feeds.wired.com/wired/index",
-    };
+        RssFeed(String url, String description, Locale locale) {
+            this.url = url;
+            this.description = description;
+            this.locale = locale;
+        }
+
+        private static String getTopLevelDomain(String url) {
+            final int firstPoint = url.indexOf(".");
+            return url.substring(firstPoint + 1, url.indexOf("/", firstPoint + 1));
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public Locale getLanguage() {
+            return locale;
+        }
+    }
+    
+    private static final List<RssFeed> feeds = Arrays.asList(
+            new RssFeed("http://heise.de.feedsportal.com/c/35207/f/653901/index.rss","heise.de",Locale.GERMAN),
+            new RssFeed("http://rss.slashdot.org/Slashdot/slashdot"),
+            new RssFeed("http://feeds.wired.com/wired/index")
+    );
+
     private static final String ID = "ReadNewz";
 
     private final ItemPlayback itemPlayback = new ItemPlayback();
+    private final ItemPlaybackFeedBackProvider itemPlaybackFeedBackProvider = new ItemPlaybackFeedBackProvider();
 
     private TextToSpeech textToSpeech;
 
@@ -79,7 +117,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         Log.d(ID, "onSaveInstanceState");
         outState.putInt("rssFeedIndex", rssFeedIndex);
         outState.putInt("rssItemIndex",rssItemIndex);
-        outState.putInt("rssItemSentenceIndex",rssItemSentenceIndex);
+        outState.putInt("rssItemSentenceIndex", rssItemSentenceIndex);
         outState.putBoolean("shouldSpeak", shouldSpeak);
     }
 
@@ -122,64 +160,12 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             return;
         }
 
-        int result = textToSpeech.setLanguage(Locale.ENGLISH);
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            Log.e(ID, "Language ENGLISH not supported!");
-            return;
-        }
-
         findViewById(R.id.previousFeed).setEnabled(true);
         findViewById(R.id.nextFeed).setEnabled(true);
 
         itemPlayback.setTextToSpeech(textToSpeech);
         itemPlayback.setSentenceIndex(rssItemSentenceIndex);
-        itemPlayback.setItemPlaybackListener(new ItemPlaybackListener() {
-
-            @Override
-            void beganWith(int index, int total, final String sentence) {
-                rssItemSentenceIndex = index;
-                setStatusText("Reading", index, total);
-                Handler refresh = new Handler(Looper.getMainLooper());
-                refresh.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        setPlaybackCurrentSentence(sentence);
-                    }
-                });
-            }
-
-            @Override
-            void stoppedAt(int index, int total, String sentence) {
-                setStatusText("Paused", index, total);
-            }
-
-            @Override
-            void finishedItem(int index, int total, String sentence) {
-                setStatusText("Finished", index, total);
-            }
-
-            @Override
-            void finishedAll(int total) {
-                Handler refresh = new Handler(Looper.getMainLooper());
-                refresh.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        playbackNextItem();
-                    }
-                });
-            }
-
-            private void setStatusText(final String status, final int index, final int total) {
-                Handler refresh = new Handler(Looper.getMainLooper());
-                refresh.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        ReadNewz.this.setStatusText(status, index, total);
-                    }
-                });
-            }
-
-        });
+        itemPlayback.setItemPlaybackListener(itemPlaybackFeedBackProvider);
 
         @SuppressWarnings("deprecation") // UtteranceProgressListener is API level 15
         final int listenerSetResult = textToSpeech.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener() {
@@ -193,11 +179,20 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         updateRSSItems();
     }
 
+    public boolean setLanguage(Locale language) {
+        int result = textToSpeech.setLanguage(language);
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            Log.e(ID, "Language ENGLISH not supported!");
+            return true;
+        }
+        return false;
+    }
+
     // --- UI callbacks ---
 
     public void nextFeed(final View v) {
         rssFeedIndex++;
-        if (rssFeedIndex >= urls.length)
+        if (rssFeedIndex >= feeds.size())
             rssFeedIndex = 0;
         updateRSSItems();
     }
@@ -205,7 +200,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     public void previousFeed(final View v) {
         rssFeedIndex--;
         if (rssFeedIndex < 0)
-            rssFeedIndex = urls.length - 1;
+            rssFeedIndex = feeds.size() - 1;
         updateRSSItems();
     }
 
@@ -225,13 +220,18 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     // --- Others ---
 
     private void updateRSSItems() {
-        final String url = urls[rssFeedIndex];
+        final RssFeed rssFeed = feeds.get(rssFeedIndex);
+        final String url = rssFeed.getUrl();
+        
+        final Locale language = rssFeed.getLanguage();
+        if (setLanguage(language)) {
+            setPlaybackCurrentSentence("Language "+ language + "not supported!");
+            return;
+        }
 
         itemPlayback.stopSpeaking();
-        final int firstPoint = url.indexOf(".");
-        final String all = url.substring(firstPoint + 1, url.indexOf("/", firstPoint + 1));
         TextView textView = (TextView) findViewById(R.id.rssHost);
-        textView.setText(all, TextView.BufferType.EDITABLE);
+        textView.setText(rssFeed.getDescription(), TextView.BufferType.EDITABLE);
 
         setPlaybackCurrentSentence("");
 
@@ -308,4 +308,51 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         bar.setMax(total);
     }
 
+    private class ItemPlaybackFeedBackProvider extends ItemPlaybackListener {
+
+        @Override
+        void beganWith(int index, int total, final String sentence) {
+            rssItemSentenceIndex = index;
+            setStatusText("Reading", index, total);
+            Handler refresh = new Handler(Looper.getMainLooper());
+            refresh.post(new Runnable() {
+                @Override
+                public void run() {
+                    setPlaybackCurrentSentence(sentence);
+                }
+            });
+        }
+
+        @Override
+        void stoppedAt(int index, int total, String sentence) {
+            setStatusText("Paused", index, total);
+        }
+
+        @Override
+        void finishedItem(int index, int total, String sentence) {
+            setStatusText("Finished", index, total);
+        }
+
+        @Override
+        void finishedAll(int total) {
+            Handler refresh = new Handler(Looper.getMainLooper());
+            refresh.post(new Runnable() {
+                @Override
+                public void run() {
+                    playbackNextItem();
+                }
+            });
+        }
+
+        private void setStatusText(final String status, final int index, final int total) {
+            Handler refresh = new Handler(Looper.getMainLooper());
+            refresh.post(new Runnable() {
+                @Override
+                public void run() {
+                    ReadNewz.this.setStatusText(status, index, total);
+                }
+            });
+        }
+
+    }
 }
