@@ -95,7 +95,6 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     protected void onStop() {
         super.onStop();
         Log.d(ID, "onStop");
-        itemPlayback.stopSpeaking();
     }
 
     @Override
@@ -108,6 +107,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     protected void onDestroy() {
         super.onDestroy();
         Log.d(ID, "onDestroy");
+        itemPlayback.stopSpeaking();
     }
 
     // --- TextToSpeech.OnInitListener ---
