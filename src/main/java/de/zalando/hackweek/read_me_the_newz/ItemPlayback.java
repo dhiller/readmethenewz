@@ -112,4 +112,7 @@ class ItemPlayback {
         this.sentenceIndex = 0;
     }
 
+    public String getCurrentSentence() {
+        return this.sentences.get(sentenceIndex);
+    }
 }

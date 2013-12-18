@@ -79,10 +79,10 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         Log.d(ID, "onSaveInstanceState");
-        outState.putInt("rssFeedIndex",rssFeedIndex);
+        outState.putInt("rssFeedIndex", rssFeedIndex);
         outState.putInt("rssItemIndex",rssItemIndex);
         outState.putInt("rssItemSentenceIndex",rssItemSentenceIndex);
-        outState.putBoolean("shouldSpeak",shouldSpeak);
+        outState.putBoolean("shouldSpeak", shouldSpeak);
     }
 
     @Override
@@ -151,7 +151,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
             @Override
             void stoppedAt(int index, int total, String sentence) {
-                setStatusText("Stopped", index, total);
+                setStatusText("Paused", index, total);
             }
 
             @Override
@@ -173,11 +173,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                 Handler refresh = new Handler(Looper.getMainLooper());
                 refresh.post(new Runnable() {
                     public void run() {
-                        TextView textView = (TextView) findViewById(R.id.status);
-                        textView.setText(status, TextView.BufferType.EDITABLE);
-                        ProgressBar bar = (ProgressBar) findViewById(R.id.readProgress);
-                        bar.setProgress(index);
-                        bar.setMax(total);
+                        ReadNewz.this.setStatusText(status, index, total);
                     }
                 });
             }
@@ -203,7 +199,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
         updateRSSItems();
     }
-    
+
     // --- UI callbacks ---
 
     public void nextFeed(final View v) {
@@ -297,6 +293,8 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
         setPlaybackCurrentSentence(text);
         setTitle(title);
+        setStatusText(shouldSpeak?"Reading":"Paused",rssItemSentenceIndex,itemPlayback.numberOfSentences());
+        setPlaybackCurrentSentence(itemPlayback.getCurrentSentence());
     }
 
     private void setTitle(String titleText) {
@@ -307,6 +305,14 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     private void setPlaybackCurrentSentence(String text) {
         TextView textView = (TextView) findViewById(R.id.text);
         textView.setText(text, TextView.BufferType.EDITABLE);
+    }
+
+    private void setStatusText(String status, int index, int total) {
+        TextView textView = (TextView) findViewById(R.id.status);
+        textView.setText(status, TextView.BufferType.EDITABLE);
+        ProgressBar bar = (ProgressBar) findViewById(R.id.readProgress);
+        bar.setProgress(index);
+        bar.setMax(total);
     }
 
 }
