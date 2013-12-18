@@ -3,15 +3,22 @@ package de.zalando.hackweek.read_me_the_newz;
 import static java.lang.String.format;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import android.content.Context;
+import java.util.Collections;
+import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.PowerManager;
+
+import android.util.Log;
 
 public class DownloadTask extends AsyncTask<URL, DownloadTask.Progress, DownloadTask.Result> {
 
@@ -91,6 +98,8 @@ public class DownloadTask extends AsyncTask<URL, DownloadTask.Progress, Download
         }
     }
 
+    private static final String ID = DownloadTask.class.getSimpleName();
+
     private Context context;
 
     public DownloadTask(final Context context) {
@@ -116,8 +125,7 @@ public class DownloadTask extends AsyncTask<URL, DownloadTask.Progress, Download
     private Result download(final URL url) {
         HttpURLConnection connection = null;
         try {
-            connection = (HttpURLConnection) url.openConnection();
-            connection.connect();
+            connection = resolveRedirections(url);
 
             // expect HTTP 200 OK, so we don't mistakenly save error report
             // instead of the file
@@ -130,6 +138,8 @@ public class DownloadTask extends AsyncTask<URL, DownloadTask.Progress, Download
             // might be -1: server did not report the length
             final int contentLength = connection.getContentLength();
             String contentEncoding = connection.getContentEncoding();
+
+            Log.d(ID, "Starting to download " + contentLength + " bytes (" + contentEncoding + ") from " + url);
 
             // download the file
             final ByteArrayOutputStream output = new ByteArrayOutputStream( //
@@ -165,6 +175,50 @@ public class DownloadTask extends AsyncTask<URL, DownloadTask.Progress, Download
             return failed(e);
         } finally {
             if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private HttpURLConnection resolveRedirections(final URL url) throws IOException {
+        return resolveRedirections(url, Collections.<String>emptySet());
+    }
+
+    private HttpURLConnection resolveRedirections(final URL url, final Set<String> locations) throws IOException {
+        boolean disconnect = true;
+
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+        try {
+            Log.d(ID, "Connecting to " + url);
+            connection.setInstanceFollowRedirects(false);
+            connection.connect();
+
+            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                throw new IOException(format("Server returned %s: %s", //
+                        connection.getResponseCode(), connection.getResponseMessage()));
+            }
+
+            final String location = connection.getHeaderField("Location");
+
+            if (location != null) {
+                Log.d(ID, url + "redirects to " + location);
+                connection.disconnect();
+                disconnect = false;
+
+                if (locations.contains(location)) {
+                    throw new IOException("Cyclic redirects: " + locations);
+                }
+
+                return resolveRedirections(new URL(location),
+                        ImmutableSet.<String>builder().addAll(locations).add(location).build());
+            }
+
+            disconnect = false;
+            return connection;
+
+        } finally {
+            if (disconnect) {
                 connection.disconnect();
             }
         }

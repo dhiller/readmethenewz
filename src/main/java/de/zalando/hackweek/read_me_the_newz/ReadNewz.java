@@ -221,85 +221,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             activeItemFetcher.cancel(true);
         }
 
-        activeItemFetcher = new DownloadTask(this) {
-            @Override
-            protected void onProgressUpdate(final Progress... values) {
-                final Progress progress = values[0];
-
-                if (progress.isTotalBytesAvailable()) {
-                    Log.i(ID, progress.getBytesReceived() + "/"+ progress.getTotalBytes());
-                    setStatusText(format("Downloaded %s%%…", progress.getPercentage()),
-                            (int) progress.getBytesReceived(), (int) progress.getTotalBytes());
-                } else {
-                    setStatusText(format("Downloaded %d bytes…", progress.getBytesReceived()), 0, 1);
-                }
-            }
-
-            @Override
-            protected void onPostExecute(final Result result) {
-                if (activeItemFetcher != this) {
-                    return;
-                }
-
-                activeItemFetcher = null;
-
-                if (isCancelled()) {
-                    return;
-                }
-
-                if (!result.isSuccess()) {
-                    Log.e(ID, "RSS download failed", result.getException());
-                    return;
-                }
-
-                setStatusText("Processing RSS feed…", 1, 1);
-                activeItemFetcher = new AsyncTask<Void, Void, RssFeed>() {
-                    @Override
-                    protected RssFeed doInBackground(final Void... unused) {
-                        try {
-                            return RssReader.read(new ByteArrayInputStream(result.getContent()));
-                        } catch (Exception e) {
-                            Log.e(ID, "RSS parsing failed", result.getException());
-                            return null;
-                        }
-                    }
-
-                    @Override
-                    protected void onPostExecute(final RssFeed result) {
-                        if (activeItemFetcher != this) {
-                            return;
-                        }
-
-                        activeItemFetcher = null;
-
-                        if (isCancelled()) {
-                            return;
-                        }
-
-                        setStatusText("", 0, 1);
-
-                        rssItems = result.getRssItems();
-                        rssItemIndex = 0;
-                        setItemForPlayback();
-                    }
-
-                    @Override
-                    protected void onCancelled() {
-                        if (activeItemFetcher == this) {
-                            activeItemFetcher = null;
-                        }
-                    }
-                }.execute();
-
-            }
-
-            @Override
-            protected void onCancelled(final Result result) {
-                if (activeItemFetcher == this) {
-                    activeItemFetcher = null;
-                }
-            }
-        }.execute(url);
+        activeItemFetcher = new RssFeedDownloadTask().execute(url);
     }
 
     private void playbackNextItem() {
@@ -355,6 +277,91 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         ProgressBar bar = (ProgressBar) findViewById(R.id.readProgress);
         bar.setProgress(index);
         bar.setMax(total);
+    }
+
+    private final class RssFeedDownloadTask extends DownloadTask {
+        RssFeedDownloadTask() {
+            super(ReadNewz.this);
+        }
+
+        @Override
+        protected void onProgressUpdate(final Progress... values) {
+            final Progress progress = values[0];
+
+            if (progress.isTotalBytesAvailable()) {
+                Log.i(ID, progress.getBytesReceived() + "/"+ progress.getTotalBytes());
+                setStatusText(format("Downloaded %s%%…", progress.getPercentage()),
+                        (int) progress.getBytesReceived(), (int) progress.getTotalBytes());
+            } else {
+                Log.i(ID, Long.toString(progress.getBytesReceived()));
+                setStatusText(format("Downloaded %d bytes…", progress.getBytesReceived()), 0, 1);
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final Result result) {
+            if (activeItemFetcher != this) {
+                return;
+            }
+
+            activeItemFetcher = null;
+
+            if (isCancelled()) {
+                return;
+            }
+
+            if (!result.isSuccess()) {
+                Log.e(ID, "RSS download failed", result.getException());
+                return;
+            }
+
+            setStatusText("Processing RSS feed…", 1, 1);
+            activeItemFetcher = new AsyncTask<Void, Void, RssFeed>() {
+                @Override
+                protected RssFeed doInBackground(final Void... unused) {
+                    try {
+                        return RssReader.read(new ByteArrayInputStream(result.getContent()));
+                    } catch (Exception e) {
+                        Log.e(ID, "RSS parsing failed", result.getException());
+                        return null;
+                    }
+                }
+
+                @Override
+                protected void onPostExecute(final RssFeed result) {
+                    if (activeItemFetcher != this) {
+                        return;
+                    }
+
+                    activeItemFetcher = null;
+
+                    if (isCancelled()) {
+                        return;
+                    }
+
+                    setStatusText("", 0, 1);
+
+                    rssItems = result.getRssItems();
+                    rssItemIndex = 0;
+                    setItemForPlayback();
+                }
+
+                @Override
+                protected void onCancelled() {
+                    if (activeItemFetcher == this) {
+                        activeItemFetcher = null;
+                    }
+                }
+            }.execute();
+
+        }
+
+        @Override
+        protected void onCancelled(final Result result) {
+            if (activeItemFetcher == this) {
+                activeItemFetcher = null;
+            }
+        }
     }
 
     private class ItemPlaybackFeedBackProvider extends ItemPlaybackListener {
