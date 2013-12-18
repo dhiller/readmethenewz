@@ -17,8 +17,6 @@ import android.os.Handler;
 import android.os.Looper;
 
 import android.speech.tts.TextToSpeech;
-import android.speech.tts.UtteranceProgressListener;
-
 import android.util.Log;
 
 import android.view.View;
@@ -126,7 +124,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             Log.e(ID, "Language ENGLISH not supported!");
             return;
         }
-        
+
         findViewById(R.id.previousFeed).setEnabled(true);
         findViewById(R.id.nextFeed).setEnabled(true);
 
@@ -140,6 +138,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                 setStatusText("Reading", index, total);
                 Handler refresh = new Handler(Looper.getMainLooper());
                 refresh.post(new Runnable() {
+                    @Override
                     public void run() {
                         setPlaybackCurrentSentence(sentence);
                     }
@@ -160,6 +159,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             void finishedAll(int total) {
                 Handler refresh = new Handler(Looper.getMainLooper());
                 refresh.post(new Runnable() {
+                    @Override
                     public void run() {
                         playbackNextItem();
                     }
@@ -169,6 +169,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             private void setStatusText(final String status, final int index, final int total) {
                 Handler refresh = new Handler(Looper.getMainLooper());
                 refresh.post(new Runnable() {
+                    @Override
                     public void run() {
                         TextView textView = (TextView) findViewById(R.id.status);
                         textView.setText(status, TextView.BufferType.EDITABLE);
@@ -181,19 +182,11 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
         });
 
-        final int listenerSetResult = textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-
+        @SuppressWarnings("deprecation") // UtteranceProgressListener is API level 15
+        final int listenerSetResult = textToSpeech.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener() {
             @Override
-            public void onStart(String utteranceId) {
-            }
-
-            @Override
-            public void onDone(String utteranceId) {
+            public void onUtteranceCompleted(final String utteranceId) {
                 itemPlayback.continueWithNextSentence();
-            }
-
-            @Override
-            public void onError(String utteranceId) {
             }
         });
         Log.d(ID, "Result for setListener: " + listenerSetResult);
@@ -233,13 +226,13 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
     private void updateRSSItems() {
         final String url = urls[rssFeedIndex];
-        
+
         itemPlayback.stopSpeaking();
         final int firstPoint = url.indexOf(".");
         final String all = url.substring(firstPoint + 1, url.indexOf("/", firstPoint + 1));
         TextView textView = (TextView) findViewById(R.id.rssHost);
         textView.setText(all, TextView.BufferType.EDITABLE);
-        
+
         setPlaybackCurrentSentence("");
 
         URL current = null;

@@ -14,6 +14,16 @@
 
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <!-- as RssReader is not available as a Maven artifact, just add these 4 classes as an additional source directory -->
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
@@ -38,11 +48,11 @@
                 <groupId>com.jayway.maven.plugins.android.generation2</groupId>
                 <artifactId>android-maven-plugin</artifactId>
                 <configuration>
-                <resourceDirectory>${project.basedir}/src/main/res</resourceDirectory>
+                    <resourceDirectory>${project.basedir}/src/main/res</resourceDirectory>
                     <sdk>
                         <!-- https://developer.android.com/guide/topics/manifest/uses-sdk-element.html#ApiLevels -->
-                        <!-- platform as api level (api level 19 = platform 4.4) -->
-                        <platform>19</platform>
+                        <!-- platform as api level (api level 10 = platform 2.3.3) -->
+                        <platform>10</platform>
                     </sdk>
                 </configuration>
             </plugin>
@@ -64,7 +74,7 @@
         <dependency>
             <groupId>android</groupId>
             <artifactId>android</artifactId>
-            <version>4.4_r1</version>
+            <version>2.3.3_r2</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
