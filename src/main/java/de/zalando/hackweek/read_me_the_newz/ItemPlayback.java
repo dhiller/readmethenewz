@@ -9,6 +9,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
 * @author dhiller
@@ -62,7 +64,7 @@ class ItemPlayback {
         shouldSpeak = true;
         if (numberOfSentences() > sentenceIndex) {
             currentSentence = sentences.get(sentenceIndex);
-            textToSpeech.speak(currentSentence, TextToSpeech.QUEUE_FLUSH, ttsParams);
+            textToSpeech.speak(splitAcronyms(currentSentence), TextToSpeech.QUEUE_FLUSH, ttsParams);
             itemPlaybackListener.beganWith(sentenceIndex, numberOfSentences(), currentSentence);
         } else {
             itemPlaybackListener.finishedAll(numberOfSentences());
@@ -96,10 +98,27 @@ class ItemPlayback {
 
         // TODO Add date of article
         sentences.add(title);
-        final List<String> lines = Arrays.asList(description.split("\\. "));
-        sentences.addAll(lines);
+        sentences.addAll(splitIntoSentences(description));
         
         this.setSentences(sentences);
+    }
+
+    private List<String> splitIntoSentences(String description) {
+        return Arrays.asList(description.replaceAll("([\\.?!]\"?) ", "$1\n").split("\n"));
+    }
+
+    private String splitAcronyms(String s) {
+        String result = s;
+        final Matcher matcher = Pattern.compile("([A-Z]{2,})").matcher(s);
+        while (matcher.find()) {
+            final String group = matcher.group(0);
+            StringBuilder replacement = new StringBuilder();
+            for (int index = 0; index < group.length(); index++) {
+                replacement.append(" " + group.substring(index, index + 1));
+            }
+            result = result.replace(group, replacement.toString().substring(1));
+        }
+        return result;
     }
 
     public void setSentenceIndex(int sentenceIndex) {
