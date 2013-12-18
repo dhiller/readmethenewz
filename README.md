@@ -21,6 +21,8 @@ Sonatype's [Android Application Development with Maven](http://books.sonatype.co
 Libraries
 =========
 
+  - [Google Guava 12.0.1](https://code.google.com/p/guava-libraries/wiki/Release12)  
+      (as Maven dependency)
   - [jsoup 1.7.3](https://github.com/jhy/jsoup/tree/d599990c331989230a6e1d0e4fea9e577022cc9c)  
       (as Maven dependency)
   - [Android-RSS-Reader-Library](https://github.com/matshofman/Android-RSS-Reader-Library)  
