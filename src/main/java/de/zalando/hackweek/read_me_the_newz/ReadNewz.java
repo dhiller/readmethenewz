@@ -44,6 +44,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     private int rssFeedIndex = 0;
     private int rssItemIndex = 0;
     private int rssItemSentenceIndex = 0;
+    private boolean shouldSpeak = true;
 
     // --- Application lifecycle callbacks ---
 
@@ -60,6 +61,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             rssFeedIndex = savedInstanceState.getInt("rssFeedIndex");
             rssItemIndex = savedInstanceState.getInt("rssItemIndex");
             rssItemSentenceIndex = savedInstanceState.getInt("rssItemSentenceIndex");
+            shouldSpeak = savedInstanceState.getBoolean("shouldSpeak");
         }
         
         if (textToSpeech == null)
@@ -80,6 +82,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         outState.putInt("rssFeedIndex",rssFeedIndex);
         outState.putInt("rssItemIndex",rssItemIndex);
         outState.putInt("rssItemSentenceIndex",rssItemSentenceIndex);
+        outState.putBoolean("shouldSpeak",shouldSpeak);
     }
 
     @Override
@@ -226,6 +229,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     }
 
     public void playPause(final View v) {
+        shouldSpeak = !shouldSpeak;
         itemPlayback.toggleSpeaking();
     }
     
@@ -287,7 +291,8 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             text = Jsoup.parse(currentItem.getDescription()).text();
             itemPlayback.setItemForPlayback(currentItem);
             itemPlayback.setSentenceIndex(rssItemSentenceIndex);
-            itemPlayback.startSpeaking();
+            if(shouldSpeak)
+                itemPlayback.startSpeaking();
         }
 
         setPlaybackCurrentSentence(text);
