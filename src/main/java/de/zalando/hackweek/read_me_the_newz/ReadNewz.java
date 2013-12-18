@@ -5,13 +5,11 @@ import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.Locale;
-import java.util.concurrent.ExecutionException;
 
-import android.widget.ProgressBar;
 import org.jsoup.Jsoup;
 
 import android.app.Activity;
-
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -19,15 +17,16 @@ import android.os.Looper;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
-import android.view.View;
-
+import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import android.view.View;
 
 import nl.matshofman.saxrssreader.RssItem;
 
 public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
-    private static final String[] urls = new String[]{
+    private static final String[] FEED_URLS = {
             "http://rss.slashdot.org/Slashdot/slashdot",
 //            "http://www.google.com/alerts/feeds/10782259317798652848/4797091171555319245", // Zalando news feed
             "http://feeds.wired.com/wired/index",
@@ -37,6 +36,8 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     private final ItemPlayback itemPlayback = new ItemPlayback();
 
     private TextToSpeech textToSpeech;
+
+    private AsyncTask<?, ?, ArrayList<RssItem>> activeItemFetcher;
 
     private ArrayList<RssItem> rssItems;
     private int rssFeedIndex = 0;
@@ -53,16 +54,17 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         super.onCreate(savedInstanceState);
         Log.d(ID, "onCreate");
         setContentView(R.layout.main);
-        
-        if(savedInstanceState!=null) {
+
+        if (savedInstanceState != null) {
             rssFeedIndex = savedInstanceState.getInt("rssFeedIndex");
             rssItemIndex = savedInstanceState.getInt("rssItemIndex");
             rssItemSentenceIndex = savedInstanceState.getInt("rssItemSentenceIndex");
         }
-        
-        if (textToSpeech == null)
+
+        if (textToSpeech == null) {
             textToSpeech = new TextToSpeech(this, this);
-        
+        }
+
     }
 
     @Override
@@ -75,9 +77,9 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         Log.d(ID, "onSaveInstanceState");
-        outState.putInt("rssFeedIndex",rssFeedIndex);
-        outState.putInt("rssItemIndex",rssItemIndex);
-        outState.putInt("rssItemSentenceIndex",rssItemSentenceIndex);
+        outState.putInt("rssFeedIndex", rssFeedIndex);
+        outState.putInt("rssItemIndex", rssItemIndex);
+        outState.putInt("rssItemSentenceIndex", rssItemSentenceIndex);
     }
 
     @Override
@@ -91,6 +93,9 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         super.onStop();
         Log.d(ID, "onStop");
         itemPlayback.stopSpeaking();
+        if (activeItemFetcher != null) {
+            activeItemFetcher.cancel(true);
+        }
     }
 
     @Override
@@ -136,6 +141,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             void beganWith(int index, int total, final String sentence) {
                 rssItemSentenceIndex = index;
                 setStatusText("Reading", index, total);
+
                 Handler refresh = new Handler(Looper.getMainLooper());
                 refresh.post(new Runnable() {
                     @Override
@@ -173,6 +179,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                     public void run() {
                         TextView textView = (TextView) findViewById(R.id.status);
                         textView.setText(status, TextView.BufferType.EDITABLE);
+
                         ProgressBar bar = (ProgressBar) findViewById(R.id.readProgress);
                         bar.setProgress(index);
                         bar.setMax(total);
@@ -193,12 +200,12 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
         updateRSSItems();
     }
-    
+
     // --- UI callbacks ---
 
     public void nextFeed(final View v) {
         rssFeedIndex++;
-        if (rssFeedIndex >= urls.length)
+        if (rssFeedIndex >= FEED_URLS.length)
             rssFeedIndex = 0;
         updateRSSItems();
     }
@@ -206,7 +213,8 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     public void previousFeed(final View v) {
         rssFeedIndex--;
         if (rssFeedIndex < 0)
-            rssFeedIndex = urls.length - 1;
+            rssFeedIndex = FEED_URLS.length - 1;
+
         updateRSSItems();
     }
 
@@ -221,13 +229,22 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     public void playPause(final View v) {
         itemPlayback.toggleSpeaking();
     }
-    
+
     // --- Others ---
 
     private void updateRSSItems() {
-        final String url = urls[rssFeedIndex];
+        final String url = FEED_URLS[rssFeedIndex];
+
+        URL current = null;
+        try {
+            current = new URL(url);
+        } catch (MalformedURLException e) {
+            Log.e(ID, "Failed to create URL from " + url, e);
+            return;
+        }
 
         itemPlayback.stopSpeaking();
+
         final int firstPoint = url.indexOf(".");
         final String all = url.substring(firstPoint + 1, url.indexOf("/", firstPoint + 1));
         TextView textView = (TextView) findViewById(R.id.rssHost);
@@ -235,33 +252,36 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
         setPlaybackCurrentSentence("");
 
-        URL current = null;
-        try {
-            current = new URL(url);
-        } catch (MalformedURLException e) {
-            Log.e(ID, "Failed to create URL from " + url, e);
-        }
+        activeItemFetcher = new RSSItemFetcher() {
+            @Override
+            protected void onProgressUpdate(final Integer[] values) {
+                super.onProgressUpdate(values);
+            }
 
-        try {
-            rssItems = new RSSItemFetcher().execute(current).get();
-        } catch (InterruptedException e) {
-            Log.e(ID, "Failed to parse rss items from " + current, e);
-        } catch (ExecutionException e) {
-            Log.e(ID, "Failed to parse rss items from " + current, e);
-        }
+            @Override
+            protected void onPostExecute(ArrayList<RssItem> result) {
+                rssItems = result;
+                setItemForPlayback();
+            }
 
-        setItemForPlayback();
+            @Override
+            protected void onCancelled(final ArrayList<RssItem> result) {
+                if (activeItemFetcher == this) {
+                    activeItemFetcher = null;
+                }
+            }
+        }.execute(current);
     }
 
     private void playbackNextItem() {
         rssItemIndex++;
-        rssItemSentenceIndex=0;
+        rssItemSentenceIndex = 0;
         setItemForPlayback();
     }
 
     private void playbackPreviousItem() {
         rssItemIndex--;
-        rssItemSentenceIndex=0;
+        rssItemSentenceIndex = 0;
         setItemForPlayback();
     }
 

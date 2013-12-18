@@ -12,8 +12,8 @@ import java.net.URL;
 import java.util.ArrayList;
 
 /**
-* @author dhiller
-*/
+ * @author dhiller
+ */
 class RSSItemFetcher extends AsyncTask<URL, Integer, ArrayList<RssItem>> {
 
     private static final String ID = "RSSItemFetcher";
@@ -39,5 +39,10 @@ class RSSItemFetcher extends AsyncTask<URL, Integer, ArrayList<RssItem>> {
         }
 
         return result;
+    }
+
+    @Override
+    protected void onPostExecute(ArrayList<RssItem> result) {
+        super.onPostExecute(result);
     }
 }
