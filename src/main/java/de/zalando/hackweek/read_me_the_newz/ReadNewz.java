@@ -159,17 +159,11 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     // --- UI callbacks ---
 
     public void nextFeed(final View v) {
-        rssFeedDescriptorIndex++;
-        if (rssFeedDescriptorIndex >= rssFeedDescriptors.size())
-            rssFeedDescriptorIndex = 0;
-        updateRSSItems();
+        startPlaybackForNextFeed();
     }
 
     public void previousFeed(final View v) {
-        rssFeedDescriptorIndex--;
-        if (rssFeedDescriptorIndex < 0)
-            rssFeedDescriptorIndex = rssFeedDescriptors.size() - 1;
-        updateRSSItems();
+        startPlaybackForPreviousFeed();
     }
 
     public void previous(final View v) {
@@ -186,6 +180,20 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     }
 
     // --- Others ---
+
+    private void startPlaybackForNextFeed() {
+        rssFeedDescriptorIndex++;
+        if (rssFeedDescriptorIndex >= rssFeedDescriptors.size())
+            rssFeedDescriptorIndex = 0;
+        updateRSSItems();
+    }
+
+    private void startPlaybackForPreviousFeed() {
+        rssFeedDescriptorIndex--;
+        if (rssFeedDescriptorIndex < 0)
+            rssFeedDescriptorIndex = rssFeedDescriptors.size() - 1;
+        updateRSSItems();
+    }
 
     private void updateRSSItems() {
         final RssFeedDescriptor rssFeedDescriptor = rssFeedDescriptors.get(rssFeedDescriptorIndex);
@@ -211,9 +219,14 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     }
 
     private void playbackNextItem() {
-        rssItemIndex++;
-        rssItemSentenceIndex = 0;
-        setItemForPlayback();
+        if(rssItemIndex >= rssItems.size()) {
+            startPlaybackForNextFeed();
+        }
+        else{
+            rssItemIndex++;
+            rssItemSentenceIndex = 0;
+            setItemForPlayback();
+        }
     }
 
     private void playbackPreviousItem() {
