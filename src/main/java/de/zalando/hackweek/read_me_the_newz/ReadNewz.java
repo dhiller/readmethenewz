@@ -1,30 +1,22 @@
 package de.zalando.hackweek.read_me_the_newz;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.ExecutionException;
-
-import android.widget.ProgressBar;
-import org.jsoup.Jsoup;
-
 import android.app.Activity;
-
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
-
 import android.view.View;
-
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import de.zalando.hackweek.read_me_the_newz.rss.item.Item;
+import org.jsoup.Jsoup;
 
-import nl.matshofman.saxrssreader.RssItem;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 
 public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
@@ -39,7 +31,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     private List<RssFeed> rssFeeds;
     private int rssFeedIndex = 0;
 
-    private ArrayList<RssItem> rssItems;
+    private List<Item> rssItems;
     private int rssItemIndex = 0;
     private int rssItemSentenceIndex = 0;
 
@@ -114,7 +106,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     /**
      * Called after initialization of TextToSpeech.
      *
-     * @param status
+     * @param status the initialization result
      */
     @Override
     public void onInit(final int status) {
@@ -206,7 +198,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         }
 
         try {
-            rssItems = new RSSItemFetcher().execute(current).get();
+            rssItems = new RSSItemFetcher().execute(rssFeed).get();
         } catch (InterruptedException e) {
             Log.e(ID, "Failed to parse rss items from " + current, e);
         } catch (ExecutionException e) {
@@ -238,7 +230,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         String text = "";
         final boolean hasItem = rssItems != null && rssItemIndex >= 0 && rssItems.size() > rssItemIndex;
         if (hasItem) {
-            final RssItem currentItem = rssItems.get(rssItemIndex);
+            final Item currentItem = rssItems.get(rssItemIndex);
             title = Jsoup.parse(currentItem.getTitle()).text();
             text = Jsoup.parse(currentItem.getDescription()).text();
             itemPlayback.setItemForPlayback(currentItem);

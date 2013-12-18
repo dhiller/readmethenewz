@@ -1,7 +1,7 @@
 package de.zalando.hackweek.read_me_the_newz;
 
 import android.speech.tts.TextToSpeech;
-import nl.matshofman.saxrssreader.RssItem;
+import de.zalando.hackweek.read_me_the_newz.rss.item.Item;
 import org.jsoup.Jsoup;
 
 import java.util.ArrayList;
@@ -91,7 +91,7 @@ class ItemPlayback {
         }
     }
 
-    public void setItemForPlayback(RssItem itemForPlayback) {
+    public void setItemForPlayback(Item itemForPlayback) {
         final String title = Jsoup.parse(itemForPlayback.getTitle()).text();
         final String description = Jsoup.parse(itemForPlayback.getDescription()).text();
         final ArrayList<String> sentences = new ArrayList<String>();
