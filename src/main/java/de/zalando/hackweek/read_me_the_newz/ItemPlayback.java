@@ -81,12 +81,6 @@ class ItemPlayback {
         return (sentences!=null?sentences.size():0);
     }
 
-    public void setSentences(ArrayList<String> sentences) {
-        stopSpeaking();
-        this.sentences = sentences;
-        this.sentenceIndex = 0;
-    }
-
     public void toggleSpeaking() {
         if (isSpeaking()) {
             stopSpeaking();
@@ -106,6 +100,16 @@ class ItemPlayback {
         sentences.addAll(lines);
         
         this.setSentences(sentences);
+    }
+
+    public void setSentenceIndex(int sentenceIndex) {
+        this.sentenceIndex = sentenceIndex;
+    }
+
+    private void setSentences(ArrayList<String> sentences) {
+        stopSpeaking();
+        this.sentences = sentences;
+        this.sentenceIndex = 0;
     }
 
 }
