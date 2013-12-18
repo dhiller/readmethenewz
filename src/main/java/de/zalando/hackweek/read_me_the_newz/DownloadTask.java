@@ -1,31 +1,33 @@
 package de.zalando.hackweek.read_me_the_newz;
 
-import static java.lang.String.format;
+import android.content.Context;
+import android.os.AsyncTask;
+import android.os.PowerManager;
+import android.util.Log;
+import com.google.common.collect.ImmutableSet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
 import java.net.HttpURLConnection;
 import java.net.URL;
-
 import java.util.Collections;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
+import static java.lang.String.format;
 
-import android.content.Context;
-import android.os.AsyncTask;
-import android.os.PowerManager;
-
-import android.util.Log;
-
-public class DownloadTask extends AsyncTask<URL, DownloadTask.Progress, DownloadTask.Result> {
+public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress, DownloadTask.Result<T>> {
 
     /**
      * The result of the download operation.
      */
-    public abstract static class Result {
+    public abstract static class Result<T> {
+
+        private T item;
+        
+        protected Result(T item) {
+            this.item = item;
+        }
 
         /**
          * Indicates if the download was sucessful or not.
@@ -51,6 +53,10 @@ public class DownloadTask extends AsyncTask<URL, DownloadTask.Progress, Download
          */
         public Exception getException() {
             return null;
+        }
+        
+        public T getItem() {
+            return item;
         }
     }
 
@@ -107,7 +113,7 @@ public class DownloadTask extends AsyncTask<URL, DownloadTask.Progress, Download
     }
 
     @Override
-    protected Result doInBackground(final URL... urls) {
+    protected Result doInBackground(final T... urls) {
 
         // take CPU lock to prevent CPU from going off if the user
         // presses the power button during download
@@ -122,16 +128,19 @@ public class DownloadTask extends AsyncTask<URL, DownloadTask.Progress, Download
         }
     }
 
-    private Result download(final URL url) {
+    protected abstract URL getUrl(T url);
+
+    private Result download(final T item) {
         HttpURLConnection connection = null;
         try {
+            final URL url = getUrl(item);
             connection = resolveRedirections(url);
 
             // expect HTTP 200 OK, so we don't mistakenly save error report
             // instead of the file
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
                 return failed(format("Server returned %s: %s", //
-                        connection.getResponseCode(), connection.getResponseMessage()));
+                        connection.getResponseCode(), connection.getResponseMessage()), url);
             }
 
             // this will be useful to display download percentage
@@ -169,10 +178,10 @@ public class DownloadTask extends AsyncTask<URL, DownloadTask.Progress, Download
                 input.close();
             }
 
-            return success(output.toByteArray(), contentEncoding);
+            return success(output.toByteArray(), contentEncoding, item);
 
         } catch (Exception e) {
-            return failed(e);
+            return failed(e, item);
         } finally {
             if (connection != null) {
                 connection.disconnect();
@@ -224,8 +233,8 @@ public class DownloadTask extends AsyncTask<URL, DownloadTask.Progress, Download
         }
     }
 
-    protected static Result success(final byte[] content, final String contentEncoding) {
-        return new Result() {
+    protected static <T> Result<T> success(final byte[] content, final String contentEncoding, T item) {
+        return new Result(item) {
             @Override
             public boolean isSuccess() {
                 return true;
@@ -248,12 +257,12 @@ public class DownloadTask extends AsyncTask<URL, DownloadTask.Progress, Download
         };
     }
 
-    protected static Result failed(final String message) {
-        return failed(new RuntimeException(message));
+    protected static <T> Result<T> failed(final String message, T item) {
+        return failed(new RuntimeException(message), item);
     }
 
-    protected static Result failed(final Exception e) {
-        return new Result() {
+    protected static <T> Result<T> failed(final Exception e, T item) {
+        return new Result(item) {
             @Override
             public boolean isSuccess() {
                 return false;

@@ -1,6 +1,5 @@
 package de.zalando.hackweek.read_me_the_newz.rss;
 
-import android.util.Log;
 import de.zalando.hackweek.read_me_the_newz.rss.item.Item;
 import de.zalando.hackweek.read_me_the_newz.rss.item.Source;
 import de.zalando.hackweek.read_me_the_newz.rss.item.Type;
@@ -67,8 +66,6 @@ public final class Extractor {
         @Override
         public void startElement(String uri, String localName, String qName,
                                  org.xml.sax.Attributes attributes) throws SAXException {
-            d("Extractor.Handler.startElement", String.format("uri: %s, localName: %s, qName: %s, attributes: %s", 
-                    uri, localName, qName, attributes));
             if (elementName(localName, qName).equals("item")) {
                 current = new Item();
                 current.setType(Type.RSS);
@@ -80,16 +77,12 @@ public final class Extractor {
         @Override
         public void characters(char[] ch, int start, int length)
                 throws SAXException {
-            d("Extractor.Handler.characters", String.format("ch: %s, start: %d, length: %d", 
-                    ch, start, length));
             builder.append(ch, start, length);
         }
 
         @Override
         public void endElement(String uri, String localName, String qName)
                 throws SAXException {
-            d("Extractor.Handler.endElement", String.format("uri: %s, localName: %s, qName: %s",
-                    uri, localName, qName));
             if (current != null
                     && elementName(localName, qName).equals("title")) {
                 current.setTitle(builder.toString());
@@ -115,10 +108,6 @@ public final class Extractor {
                 items.add(current);
                 current = null;
             }
-        }
-
-        private void d(String identifier, String message) {
-            Log.d(identifier, message);
         }
 
         /**

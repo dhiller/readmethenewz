@@ -10,13 +10,15 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import com.google.common.base.Throwables;
+import de.zalando.hackweek.read_me_the_newz.rss.item.ByteArrayContentProvider;
 import de.zalando.hackweek.read_me_the_newz.rss.item.Item;
-import nl.matshofman.saxrssreader.RssFeed;
-import nl.matshofman.saxrssreader.RssReader;
+import de.zalando.hackweek.read_me_the_newz.rss.item.Source;
+import de.zalando.hackweek.read_me_the_newz.rss.item.Type;
 import org.jsoup.Jsoup;
 
-import java.io.ByteArrayInputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Locale;
@@ -188,14 +190,6 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     private void updateRSSItems() {
         final RssFeedDescriptor rssFeedDescriptor = rssFeedDescriptors.get(rssFeedDescriptorIndex);
 
-        final URL url;
-        try {
-            url = new URL(rssFeedDescriptor.getUrl());
-        } catch (MalformedURLException e) {
-            Log.e(ID, "Malformed URL: " + rssFeedDescriptor.getUrl(), e);
-            return;
-        }
-
         final Locale language = rssFeedDescriptor.getLanguage();
         if (setLanguage(language)) {
             setPlaybackCurrentSentence("Language " + language + "not supported!");
@@ -213,7 +207,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             activeItemFetcher.cancel(true);
         }
 
-        activeItemFetcher = new RssFeedDownloadTask().execute(url);
+        activeItemFetcher = new RssFeedDownloadTask().execute(rssFeedDescriptor);
     }
 
     private void playbackNextItem() {
@@ -271,7 +265,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         bar.setMax(total);
     }
 
-    private final class RssFeedDownloadTask extends DownloadTask {
+    private final class RssFeedDownloadTask extends DownloadTask<RssFeedDescriptor> {
         RssFeedDownloadTask() {
             super(ReadNewz.this);
         }
@@ -291,7 +285,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         }
 
         @Override
-        protected void onPostExecute(final Result result) {
+        protected void onPostExecute(final Result<RssFeedDescriptor> result) {
             if (activeItemFetcher != this) {
                 return;
             }
@@ -308,11 +302,16 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             }
 
             setStatusText("Processing RSS feed…", 1, 1);
-            activeItemFetcher = new AsyncTask<Void, Void, RssFeed>() {
+
+            final RssFeedDescriptor descriptor = result.getItem();
+
+            activeItemFetcher = new AsyncTask<Void, Void, List<Item>>() {
                 @Override
-                protected RssFeed doInBackground(final Void... unused) {
+                protected List<Item> doInBackground(final Void... unused) {
                     try {
-                        return RssReader.read(new ByteArrayInputStream(result.getContent()));
+                        final Source source = new Source(descriptor.getDescription(), descriptor.getDescription(), Type.RSS, new URI(descriptor.getUrl()));
+                        return new ByteArrayContentProvider(source,result.getContent()).extract();
+//                        return RssReader.read(new ByteArrayInputStream(result.getContent()));
                     } catch (Exception e) {
                         Log.e(ID, "RSS parsing failed", result.getException());
                         return null;
@@ -320,7 +319,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                 }
 
                 @Override
-                protected void onPostExecute(final RssFeed result) {
+                protected void onPostExecute(final List<Item> result) {
                     if (activeItemFetcher != this) {
                         return;
                     }
@@ -333,7 +332,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
                     setStatusText("", 0, 1);
 
-                    rssItems = result.getRssItems();
+                    rssItems = result;
                     rssItemIndex = 0;
                     setItemForPlayback();
                 }
@@ -352,6 +351,15 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         protected void onCancelled(final Result result) {
             if (activeItemFetcher == this) {
                 activeItemFetcher = null;
+            }
+        }
+
+        @Override
+        protected URL getUrl(RssFeedDescriptor url) {
+            try {
+                return new URL(url.getUrl());
+            } catch (MalformedURLException e) {
+                throw Throwables.propagate(e);
             }
         }
     }
