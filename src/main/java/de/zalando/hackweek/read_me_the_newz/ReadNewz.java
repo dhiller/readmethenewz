@@ -48,7 +48,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     private TextToSpeech textToSpeech;
     private boolean shouldSpeak = true;
 
-    private AsyncTask<?, ?, ?> activeItemFetcher;
+    private AsyncTask<?, ?, ?> activeAsyncTask;
 
     private List<RssFeedDescriptor> rssFeedDescriptors;
     private int rssFeedDescriptorIndex = 0;
@@ -126,8 +126,8 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     protected void onDestroy() {
         super.onDestroy();
         Log.d(ID, "onDestroy");
-        if (activeItemFetcher != null) {
-            activeItemFetcher.cancel(true);
+        if (activeAsyncTask != null) {
+            activeAsyncTask.cancel(true);
         }
         itemPlayback.stopSpeaking();
         unregisterReceiver(mediaButtonReceiver);
@@ -373,11 +373,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         setPlaybackCurrentSentence("");
 
-        if (activeItemFetcher != null) {
-            activeItemFetcher.cancel(true);
-        }
-
-        activeItemFetcher = new RssFeedDownloadTask().execute(rssFeedDescriptor);
+        executeAsyncTask(new RssFeedDownloadTask(), rssFeedDescriptor);
     }
 
     private void playbackNextItem() {
@@ -460,6 +456,17 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
     }
 
+    private <T> void executeAsyncTask(final AsyncTask<T, ?, ?> asyncTask, final T... params) {
+        AsyncTask<?, ?, ?> oldTask = activeAsyncTask;
+        activeAsyncTask = null;
+        if (oldTask != null) {
+            oldTask.cancel(true);
+        }
+
+        activeAsyncTask = asyncTask;
+        asyncTask.execute(params);
+    }
+
     static void postToMainLoop(Runnable runnable) {
         new Handler(Looper.getMainLooper()).post(runnable);
     }
@@ -480,7 +487,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         @Override
         protected void onPreExecute() {
-            if (activeItemFetcher != this) {
+            if (activeAsyncTask != this) {
                 return;
             }
 
@@ -489,7 +496,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         @Override
         protected void onProgressUpdate(final Progress... values) {
-            if (activeItemFetcher != this) {
+            if (activeAsyncTask != this) {
                 cancel(false);
                 return;
             }
@@ -508,11 +515,11 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         @Override
         protected void onPostExecute(final Result<RssFeedDescriptor> result) {
-            if (activeItemFetcher != this) {
+            if (activeAsyncTask != this) {
                 return;
             }
 
-            activeItemFetcher = null;
+            activeAsyncTask = null;
 
             if (isCancelled()) {
                 return;
@@ -524,13 +531,13 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
                 return;
             }
 
-            activeItemFetcher = new RssFeedParsingTask().execute(result);
+            executeAsyncTask(new RssFeedParsingTask(), result);
         }
 
         @Override
         protected void onCancelled(final Result<RssFeedDescriptor> result) {
-            if (activeItemFetcher == this) {
-                activeItemFetcher = null;
+            if (activeAsyncTask == this) {
+                activeAsyncTask = null;
             }
         }
 
@@ -548,7 +555,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     private final class RssFeedParsingTask extends AsyncTask<DownloadTask.Result<RssFeedDescriptor>, Void, List<Item>> {
         @Override
         protected void onPreExecute() {
-            if (activeItemFetcher != this) {
+            if (activeAsyncTask != this) {
                 return;
             }
 
@@ -573,11 +580,11 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         @Override
         protected void onPostExecute(final List<Item> result) {
-            if (activeItemFetcher != this) {
+            if (activeAsyncTask != this) {
                 return;
             }
 
-            activeItemFetcher = null;
+            activeAsyncTask = null;
 
             if (isCancelled()) {
                 return;
@@ -592,8 +599,8 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         @Override
         protected void onCancelled() {
-            if (activeItemFetcher == this) {
-                activeItemFetcher = null;
+            if (activeAsyncTask == this) {
+                activeAsyncTask = null;
             }
         }
     }
