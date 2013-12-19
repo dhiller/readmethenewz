@@ -132,6 +132,11 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         itemPlayback.stopSpeaking();
         unregisterReceiver(mediaButtonReceiver);
         abandonAudioFocus();
+
+        if (textToSpeech != null) {
+            textToSpeech.shutdown();
+            textToSpeech = null;
+        }
     }
 
     // --- AudioManager.OnAudioFocusChangeListener ---
@@ -343,10 +348,12 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     private void setRssFeedIndex(int feedIndex) {
         rssFeedDescriptorIndex = feedIndex;
-        if (rssFeedDescriptorIndex >= rssFeedDescriptors.size())
+        if (rssFeedDescriptorIndex >= rssFeedDescriptors.size()) {
             rssFeedDescriptorIndex = 0;
-        if (rssFeedDescriptorIndex < 0)
+        }
+        if (rssFeedDescriptorIndex < 0) {
             rssFeedDescriptorIndex = rssFeedDescriptors.size() - 1;
+        }
         rssItemSentenceIndex = 0;
     }
 
