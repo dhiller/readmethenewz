@@ -77,7 +77,7 @@ class ItemPlayback {
         shouldSpeak = true;
         if (numberOfSentences() > sentenceIndex) {
             currentSentence = sentences.get(sentenceIndex);
-            textToSpeech.speak(splitAcronyms(currentSentence), TextToSpeech.QUEUE_FLUSH, ttsParams);
+            textToSpeech.speak(improveForPlayback(currentSentence), TextToSpeech.QUEUE_FLUSH, ttsParams);
             itemPlaybackListener.beganWith(sentenceIndex, numberOfSentences(), currentSentence);
         } else {
             itemPlaybackListener.finishedAll(numberOfSentences());
@@ -135,7 +135,15 @@ class ItemPlayback {
         return Arrays.asList(description.replaceAll("([\\.?!][\"']?) ", "$1\n").split("\n"));
     }
 
-    private String splitAcronyms(String s) {
+    private String improveForPlayback(String s) {
+        return replaceSingleQuotedTermsWithDoubleQuoted(replaceAcronymsWithDottedUppercaseChars(s));
+    }
+
+    private String replaceSingleQuotedTermsWithDoubleQuoted(String result) {
+        return result.replaceAll("'([^ ]+)'","\"$1\"");
+    }
+
+    private String replaceAcronymsWithDottedUppercaseChars(String s) {
         String result = s;
         final Matcher matcher = Pattern.compile("([A-Z]{2,})").matcher(s);
         while (matcher.find()) {
