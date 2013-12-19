@@ -21,6 +21,7 @@ import org.jsoup.Jsoup;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -295,13 +296,28 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         new Handler(Looper.getMainLooper()).post(runnable);
     }
 
+    /** Downloads a RSS feed, updating progress information in the UI. */
     private final class RssFeedDownloadTask extends DownloadTask<RssFeedDescriptor> {
         RssFeedDownloadTask() {
             super(ReadNewz.this);
         }
 
         @Override
+        protected void onPreExecute() {
+            if (activeItemFetcher != this) {
+                return;
+            }
+
+            setStatusTextIndeterminate("Starting RSS feed download…");
+        }
+
+        @Override
         protected void onProgressUpdate(final Progress... values) {
+            if (activeItemFetcher != this) {
+                cancel(false);
+                return;
+            }
+
             final Progress progress = values[0];
 
             if (progress.isTotalBytesAvailable()) {
@@ -328,56 +344,15 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
             if (!result.isSuccess()) {
                 Log.e(ID, "RSS download failed", result.getException());
+                setStatusText("RSS download failed.", 0, 1);
                 return;
             }
 
-            setStatusTextIndeterminate("Processing RSS feed…");
-
-            final RssFeedDescriptor descriptor = result.getItem();
-
-            activeItemFetcher = new AsyncTask<Void, Void, List<Item>>() {
-                @Override
-                protected List<Item> doInBackground(final Void... unused) {
-                    try {
-                        final Source source = new Source(descriptor.getDescription(), descriptor.getDescription(), Type.RSS, new URI(descriptor.getUrl()));
-                        return new ByteArrayContentProvider(source,result.getContent()).extract();
-                    } catch (Exception e) {
-                        Log.e(ID, "RSS parsing failed", result.getException());
-                        return null;
-                    }
-                }
-
-                @Override
-                protected void onPostExecute(final List<Item> result) {
-                    if (activeItemFetcher != this) {
-                        return;
-                    }
-
-                    activeItemFetcher = null;
-
-                    if (isCancelled()) {
-                        return;
-                    }
-
-                    setStatusTextIndeterminate("");
-
-                    rssItems = result;
-                    rssItemIndex = 0;
-                    setItemForPlayback();
-                }
-
-                @Override
-                protected void onCancelled() {
-                    if (activeItemFetcher == this) {
-                        activeItemFetcher = null;
-                    }
-                }
-            }.execute();
-
+            activeItemFetcher = new RssFeedParsingTask().execute(result);
         }
 
         @Override
-        protected void onCancelled(final Result result) {
+        protected void onCancelled(final Result<RssFeedDescriptor> result) {
             if (activeItemFetcher == this) {
                 activeItemFetcher = null;
             }
@@ -389,6 +364,60 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                 return new URL(url.getUrl());
             } catch (MalformedURLException e) {
                 throw Throwables.propagate(e);
+            }
+        }
+    }
+
+    /** Parses downloaded RSS content. */
+    private final class RssFeedParsingTask extends AsyncTask<DownloadTask.Result<RssFeedDescriptor>, Void, List<Item>> {
+        @Override
+        protected void onPreExecute() {
+            if (activeItemFetcher != this) {
+                return;
+            }
+
+            setStatusTextIndeterminate("Processing RSS feed…");
+        }
+
+        @Override
+        protected List<Item> doInBackground(final DownloadTask.Result<RssFeedDescriptor>... results) {
+
+            final DownloadTask.Result<RssFeedDescriptor> result = results[0];
+            final RssFeedDescriptor descriptor = result.getItem();
+
+            try {
+                final Source source = new Source(descriptor.getDescription(), descriptor.getDescription(), Type.RSS,
+                        new URI(descriptor.getUrl()));
+                return new ByteArrayContentProvider(source, result.getContent()).extract();
+            } catch (Exception e) {
+                Log.e(ID, "RSS parsing failed", result.getException());
+                return Collections.emptyList();
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final List<Item> result) {
+            if (activeItemFetcher != this) {
+                return;
+            }
+
+            activeItemFetcher = null;
+
+            if (isCancelled()) {
+                return;
+            }
+
+            setStatusTextIndeterminate("");
+
+            rssItems = result;
+            rssItemIndex = 0;
+            setItemForPlayback();
+        }
+
+        @Override
+        protected void onCancelled() {
+            if (activeItemFetcher == this) {
+                activeItemFetcher = null;
             }
         }
     }
