@@ -136,7 +136,11 @@ class ItemPlayback {
     }
 
     private String improveForPlayback(String s) {
-        return replaceSingleQuotedTermsWithDoubleQuoted(replaceAcronymsWithDottedUppercaseChars(s));
+        return replaceTrailingHyphensWithSpaces(replaceSingleQuotedTermsWithDoubleQuoted(replaceAcronymsWithDottedUppercaseChars(s)));
+    }
+
+    private String replaceTrailingHyphensWithSpaces(String text) {
+        return text.replaceAll("([^-])-", "$1 ");
     }
 
     private String replaceSingleQuotedTermsWithDoubleQuoted(String result) {
