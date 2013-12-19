@@ -19,8 +19,6 @@ import java.util.regex.Pattern;
 class ItemPlayback {
     
     private static final String ID = "ItemPlayback";
-    private static final int AFTER_TITLE_PAUSE_DURATION_MS = 500;
-    private static final int AFTER_ITEM_PAUSE_DURATION_MS = 1000;
 
     private ArrayList<String> sentences;
     private int sentenceIndex = 0;
@@ -30,8 +28,7 @@ class ItemPlayback {
     private TextToSpeech textToSpeech;
     private ItemPlaybackListener itemPlaybackListener = new ItemPlaybackListener();
     private String currentSentence;
-    private boolean playTitlePause;
-    private boolean playItemPause;
+    private PauseType pauseType = PauseType.NONE;
 
     ItemPlayback() {
         // Required for SUtteranceProgressListener
@@ -42,6 +39,42 @@ class ItemPlayback {
                 put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
             }
         };
+    }
+    
+    enum PauseType {
+        AFTER_TITLE(750, true),
+        AFTER_ITEM(1500, true),
+        NONE(0, false),
+        ;
+        private final int duration;
+        private final boolean issuePause;
+
+        private PauseType(int duration, boolean issuePause) {
+            this.duration = duration;
+            this.issuePause = issuePause;
+        }
+
+        private static PauseType getPauseTypeForIndexValue(int size, int sentenceIndex1) {
+            final PauseType newPauseType;
+            if(sentenceIndex1 ==0) {
+                newPauseType = AFTER_TITLE;
+            } else
+            if(sentenceIndex1== size -1) {
+                newPauseType = AFTER_ITEM;
+            } else {
+                newPauseType = NONE;
+            }
+            return newPauseType;
+        }
+
+        public void issuePause(TextToSpeech tts, HashMap<String,String> arguments) {
+            tts.playSilence(duration,TextToSpeech.QUEUE_FLUSH,arguments);
+        }
+
+        public boolean isIssuePause() {
+            return issuePause;
+        }
+        
     }
 
     public void setTextToSpeech(TextToSpeech textToSpeech) {
@@ -54,15 +87,9 @@ class ItemPlayback {
                 if(!ItemPlayback.this.utteranceId.equals(utteranceId))
                     return;
                 
-                if(playTitlePause) {
-                    ItemPlayback.this.textToSpeech.playSilence(AFTER_TITLE_PAUSE_DURATION_MS, TextToSpeech.QUEUE_FLUSH, ttsParams);
-                    playTitlePause = false;
-                    return;
-                }
-                
-                if(playItemPause) {
-                    ItemPlayback.this.textToSpeech.playSilence(AFTER_ITEM_PAUSE_DURATION_MS, TextToSpeech.QUEUE_FLUSH, ttsParams);
-                    playItemPause = false;
+                if (pauseType.isIssuePause()) {
+                    pauseType.issuePause(ItemPlayback.this.textToSpeech, ttsParams);
+                    pauseType = PauseType.NONE;
                     return;
                 }
                 
@@ -97,12 +124,7 @@ class ItemPlayback {
             currentSentence = sentences.get(sentenceIndex);
             textToSpeech.speak(improveForPlayback(currentSentence), TextToSpeech.QUEUE_FLUSH, ttsParams);
             itemPlaybackListener.beganWith(sentenceIndex, numberOfSentences(), currentSentence);
-            if(sentenceIndex==0) {
-                playTitlePause = true;
-            }
-            if(sentenceIndex==sentences.size()-1) {
-                playItemPause = true;
-            }
+            pauseType = PauseType.getPauseTypeForIndexValue(sentences.size(), sentenceIndex);
         } else {
             itemPlaybackListener.finishedAll(numberOfSentences());
         }
@@ -110,6 +132,7 @@ class ItemPlayback {
 
     public void stopSpeaking() {
         shouldSpeak = false;
+        pauseType = PauseType.NONE;
         if (isSpeaking()) {
             textToSpeech.stop();
             itemPlaybackListener.stoppedAt(sentenceIndex, numberOfSentences(), currentSentence);

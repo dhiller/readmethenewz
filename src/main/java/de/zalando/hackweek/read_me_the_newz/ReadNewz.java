@@ -360,19 +360,21 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     }
 
     private void playbackNextItem() {
-        if(rssItemIndex >= rssItems.size()) {
+        if (rssItemIndex >= rssItems.size()) {
             startPlaybackForNextFeed();
-        }
-        else{
-            rssItemIndex++;
-            rssItemSentenceIndex = 0;
-            setItemForPlayback();
+        } else {
+            setRssItemIndex(rssItemIndex + 1);
         }
     }
 
     private void playbackPreviousItem() {
-        rssItemIndex--;
+        setRssItemIndex(rssItemIndex - 1);
+    }
+
+    private void setRssItemIndex(int newrssItemIndex) {
+        rssItemIndex = newrssItemIndex;
         rssItemSentenceIndex = 0;
+        itemPlayback.setSentenceIndex(rssItemSentenceIndex);
         setItemForPlayback();
     }
 
