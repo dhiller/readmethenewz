@@ -270,12 +270,23 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         textView.setText(text, TextView.BufferType.EDITABLE);
     }
 
+    private void setStatusTextIndeterminate(String status) {
+        setStatusText(status, 0, 0);
+    }
+
     private void setStatusText(String status, int index, int total) {
         TextView textView = (TextView) findViewById(R.id.status);
         textView.setText(status, TextView.BufferType.EDITABLE);
         ProgressBar bar = (ProgressBar) findViewById(R.id.readProgress);
-        bar.setProgress(index);
-        bar.setMax(total);
+        if (index == 0 && total == 0) {
+            bar.setIndeterminate(true);
+            bar.setProgress(0);
+            bar.setMax(1);
+        }else {
+            bar.setIndeterminate(false);
+            bar.setProgress(index);
+            bar.setMax(total);
+        }
     }
 
     private final class RssFeedDownloadTask extends DownloadTask<RssFeedDescriptor> {
@@ -293,7 +304,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                         (int) progress.getBytesReceived(), (int) progress.getTotalBytes());
             } else {
                 Log.i(ID, Long.toString(progress.getBytesReceived()));
-                setStatusText(format("Downloaded %d bytes…", progress.getBytesReceived()), 0, 1);
+                setStatusTextIndeterminate(format("Downloaded %d bytes…", progress.getBytesReceived()));
             }
         }
 
@@ -314,7 +325,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                 return;
             }
 
-            setStatusText("Processing RSS feed…", 1, 1);
+            setStatusTextIndeterminate("Processing RSS feed…");
 
             final RssFeedDescriptor descriptor = result.getItem();
 
@@ -324,7 +335,6 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                     try {
                         final Source source = new Source(descriptor.getDescription(), descriptor.getDescription(), Type.RSS, new URI(descriptor.getUrl()));
                         return new ByteArrayContentProvider(source,result.getContent()).extract();
-//                        return RssReader.read(new ByteArrayInputStream(result.getContent()));
                     } catch (Exception e) {
                         Log.e(ID, "RSS parsing failed", result.getException());
                         return null;
@@ -343,7 +353,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
                         return;
                     }
 
-                    setStatusText("", 0, 1);
+                    setStatusTextIndeterminate("");
 
                     rssItems = result;
                     rssItemIndex = 0;
