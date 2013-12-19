@@ -5,7 +5,18 @@ Playback
     - issue after headline
     - issue after article
   - (optional) When playback is german, english words are uttered with german pronunciation, see [article](https://code.google.com/p/language-detection/)
-    
+
+Control
+=======
+  - Enable playback volume control using volume buttons
+  - Add media button support
+  - (optional) add bluetooth controls
+  - (optional) voice control
+
+Notification
+============
+  - Add notification with play/pause button
+
 Feed import
 ===========
   - To support feedly data export, add [OPML import](http://feedly.com/#opml)
