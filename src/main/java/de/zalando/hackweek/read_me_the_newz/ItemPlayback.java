@@ -117,7 +117,7 @@ class ItemPlayback {
     }
 
     private List<String> splitIntoSentences(String description) {
-        return Arrays.asList(description.replaceAll("([\\.?!]\"?) ", "$1\n").split("\n"));
+        return Arrays.asList(description.replaceAll("([\\.?!][\"']?) ", "$1\n").split("\n"));
     }
 
     private String splitAcronyms(String s) {
@@ -127,9 +127,9 @@ class ItemPlayback {
             final String group = matcher.group(0);
             StringBuilder replacement = new StringBuilder();
             for (int index = 0; index < group.length(); index++) {
-                replacement.append(" ").append(group.substring(index, index + 1));
+                replacement.append(group.substring(index, index + 1)).append(".");
             }
-            result = result.replace(group, replacement.toString().substring(1));
+            result = result.replace(group, replacement.toString());
         }
         return result;
     }
