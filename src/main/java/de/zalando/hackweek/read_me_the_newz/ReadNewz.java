@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -230,6 +231,54 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
             return true;
         }
         return false;
+    }
+
+    // --- Overrides ---
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        Log.d(ID, "dispatchKeyEvent: " + event.getKeyCode() + ", " + event.getAction());
+        handleMediaKeyEvent(event);
+        return super.dispatchKeyEvent(event);
+    }
+
+    private void handleMediaKeyEvent(KeyEvent keyEvent) {
+        if (keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+            handleMediaKeyEvent(keyEvent.getKeyCode());
+        }
+    }
+
+    private void handleMediaKeyEvent(final int keyCode) {
+        switch (keyCode) {
+        case KeyEvent.KEYCODE_MEDIA_PLAY :
+            shouldSpeak = true;
+            if (!itemPlayback.isSpeaking()) {
+                itemPlayback.startSpeaking();
+            }
+            break;
+
+        case KeyEvent.KEYCODE_MEDIA_STOP :
+            shouldSpeak = false;
+            itemPlayback.stopSpeaking();
+            break;
+
+        case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE :
+            playPause(null);
+            break;
+
+        case KeyEvent.KEYCODE_MEDIA_NEXT :
+            playbackNextItem();
+            break;
+
+        case KeyEvent.KEYCODE_MEDIA_PREVIOUS :
+            playbackPreviousItem();
+            break;
+
+        case KeyEvent.KEYCODE_HEADSETHOOK :
+            shouldSpeak = false;
+            itemPlayback.stopSpeaking();
+            break;
+        }
     }
 
     // --- UI callbacks ---
