@@ -1,6 +1,10 @@
 Playback
 ========
-  - Improve abbreviation replacements by adding dot instead of space character
+  - (done) Improve abbreviation replacements by adding dot instead of space character
+    - (optional) improve replacement by excluding sequences with ending s i.e. ISPs => I.S.Ps
+  - (done) Add source before title (i.e. "slashdot: here goes the title")
+  - (done) Replace single quoted terms with double quotes
+  - (done) Replace hyphens between words with space
   - Add pauses
     - issue after headline
     - issue after article

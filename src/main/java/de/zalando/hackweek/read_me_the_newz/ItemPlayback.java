@@ -1,6 +1,7 @@
 package de.zalando.hackweek.read_me_the_newz;
 
 import android.speech.tts.TextToSpeech;
+import android.util.Log;
 import de.zalando.hackweek.read_me_the_newz.rss.item.Item;
 import org.jsoup.Jsoup;
 
@@ -16,11 +17,13 @@ import java.util.regex.Pattern;
 * @author dhiller
 */
 class ItemPlayback {
+    
+    private static final String ID = "ItemPlayback";
 
     private ArrayList<String> sentences;
     private int sentenceIndex = 0;
     private boolean shouldSpeak = true;
-    private final UUID uuid = UUID.randomUUID();
+    private final String utteranceId = UUID.randomUUID().toString();
     private HashMap<String, String> ttsParams;
     private TextToSpeech textToSpeech;
     private ItemPlaybackListener itemPlaybackListener = new ItemPlaybackListener();
@@ -30,15 +33,25 @@ class ItemPlayback {
         // Required for SUtteranceProgressListener
         // see http://stackoverflow.com/questions/20296792/tts-utteranceprogresslistener-not-being-called
         ttsParams = new HashMap<String, String>() {
-
             {
-                put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, uuid.toString());
+                
+                put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
             }
         };
     }
 
     public void setTextToSpeech(TextToSpeech textToSpeech) {
         this.textToSpeech = textToSpeech;
+        @SuppressWarnings("deprecation") // UtteranceProgressListener is API level 15
+        final int listenerSetResult = textToSpeech.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener() {
+            @Override
+            public void onUtteranceCompleted(final String utteranceId) {
+                if(!ItemPlayback.this.utteranceId.equals(utteranceId))
+                    return;
+                continueWithNextSentence();
+            }
+        });
+        Log.d(ID, "Result for setListener: " + listenerSetResult);
     }
 
     public void setItemPlaybackListener(ItemPlaybackListener itemPlaybackListener) {
@@ -64,7 +77,7 @@ class ItemPlayback {
         shouldSpeak = true;
         if (numberOfSentences() > sentenceIndex) {
             currentSentence = sentences.get(sentenceIndex);
-            textToSpeech.speak(splitAcronyms(currentSentence), TextToSpeech.QUEUE_FLUSH, ttsParams);
+            textToSpeech.speak(improveForPlayback(currentSentence), TextToSpeech.QUEUE_FLUSH, ttsParams);
             itemPlaybackListener.beganWith(sentenceIndex, numberOfSentences(), currentSentence);
         } else {
             itemPlaybackListener.finishedAll(numberOfSentences());
@@ -92,31 +105,58 @@ class ItemPlayback {
     }
 
     public void setItemForPlayback(Item itemForPlayback) {
-        final String title = Jsoup.parse(itemForPlayback.getTitle()).text();
-        final String description = Jsoup.parse(itemForPlayback.getDescription()).text();
         final ArrayList<String> sentences = new ArrayList<String>();
-
-        // TODO Add date of article
-        sentences.add(title);
-        sentences.addAll(splitIntoSentences(description));
-        
+        sentences.add(getArticleTitle(itemForPlayback));
+        sentences.addAll(getArticleSentences(itemForPlayback));
         this.setSentences(sentences);
     }
 
-    private List<String> splitIntoSentences(String description) {
-        return Arrays.asList(description.replaceAll("([\\.?!]\"?) ", "$1\n").split("\n"));
+    private List<String> getArticleSentences(Item itemForPlayback) {
+        return splitIntoSentences(sanitize(itemForPlayback.getDescription()));
     }
 
-    private String splitAcronyms(String s) {
+    private String getArticleTitle(Item itemForPlayback) {
+        return getArticleSource(itemForPlayback) + sanitize(itemForPlayback.getTitle());
+    }
+
+    private String getArticleSource(Item itemForPlayback) {
+        final String marker = sanitize(itemForPlayback.getMarker());
+        if (marker.isEmpty())
+            return "";
+        final int dotIndex = marker.indexOf(".");
+        return (dotIndex < 0 ? marker : marker.substring(0, dotIndex)) + ": ";
+    }
+
+    private String sanitize(String text) {
+        return Jsoup.parse(text).text();
+    }
+
+    private List<String> splitIntoSentences(String description) {
+        return Arrays.asList(description.replaceAll("([\\.?!][\"']?) ", "$1\n").split("\n"));
+    }
+
+    private String improveForPlayback(String s) {
+        return replaceTrailingHyphensWithSpaces(replaceSingleQuotedTermsWithDoubleQuoted(replaceAcronymsWithDottedUppercaseChars(s)));
+    }
+
+    private String replaceTrailingHyphensWithSpaces(String text) {
+        return text.replaceAll("([^-])-", "$1 ");
+    }
+
+    private String replaceSingleQuotedTermsWithDoubleQuoted(String result) {
+        return result.replaceAll("'([^ ]+)'","\"$1\"");
+    }
+
+    private String replaceAcronymsWithDottedUppercaseChars(String s) {
         String result = s;
         final Matcher matcher = Pattern.compile("([A-Z]{2,})").matcher(s);
         while (matcher.find()) {
             final String group = matcher.group(0);
             StringBuilder replacement = new StringBuilder();
             for (int index = 0; index < group.length(); index++) {
-                replacement.append(" " + group.substring(index, index + 1));
+                replacement.append(group.substring(index, index + 1)).append(".");
             }
-            result = result.replace(group, replacement.toString().substring(1));
+            result = result.replace(group, replacement.toString());
         }
         return result;
     }

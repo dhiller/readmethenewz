@@ -193,21 +193,9 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
             return;
         }
 
-        findViewById(R.id.previousFeed).setEnabled(true);
-        findViewById(R.id.nextFeed).setEnabled(true);
-
         itemPlayback.setTextToSpeech(textToSpeech);
         itemPlayback.setSentenceIndex(rssItemSentenceIndex);
         itemPlayback.setItemPlaybackListener(itemPlaybackFeedBackProvider);
-
-        @SuppressWarnings("deprecation") // UtteranceProgressListener is API level 15
-        final int listenerSetResult = textToSpeech.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener() {
-            @Override
-            public void onUtteranceCompleted(final String utteranceId) {
-                itemPlayback.continueWithNextSentence();
-            }
-        });
-        Log.d(ID, "Result for setListener: " + listenerSetResult);
 
         updateRSSItems();
     }
@@ -223,22 +211,27 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     // --- UI callbacks ---
 
+    @SuppressWarnings("UnusedParameters")
     public void nextFeed(final View v) {
         startPlaybackForNextFeed();
     }
 
+    @SuppressWarnings("UnusedParameters")
     public void previousFeed(final View v) {
         startPlaybackForPreviousFeed();
     }
 
+    @SuppressWarnings("UnusedParameters")
     public void previous(final View v) {
         playbackPreviousItem();
     }
 
+    @SuppressWarnings("UnusedParameters")
     public void next(final View v) {
         playbackNextItem();
     }
 
+    @SuppressWarnings("UnusedParameters")
     public void playPause(final View v) {
         shouldSpeak = !shouldSpeak;
         if (shouldSpeak) {
@@ -253,17 +246,22 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     // --- Others ---
 
     private void startPlaybackForNextFeed() {
-        rssFeedDescriptorIndex++;
-        if (rssFeedDescriptorIndex >= rssFeedDescriptors.size())
-            rssFeedDescriptorIndex = 0;
+        setRssFeedIndex(rssFeedDescriptorIndex + 1);
         updateRSSItems();
     }
 
     private void startPlaybackForPreviousFeed() {
-        rssFeedDescriptorIndex--;
+        setRssFeedIndex(rssFeedDescriptorIndex - 1);
+        updateRSSItems();
+    }
+
+    private void setRssFeedIndex(int feedIndex) {
+        rssFeedDescriptorIndex = feedIndex;
+        if (rssFeedDescriptorIndex >= rssFeedDescriptors.size())
+            rssFeedDescriptorIndex = 0;
         if (rssFeedDescriptorIndex < 0)
             rssFeedDescriptorIndex = rssFeedDescriptors.size() - 1;
-        updateRSSItems();
+        rssItemSentenceIndex = 0;
     }
 
     private void updateRSSItems() {
@@ -308,9 +306,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     private void setItemForPlayback() {
 
-        findViewById(R.id.previous).setEnabled(rssItemIndex > 0);
-        findViewById(R.id.next).setEnabled(rssItemIndex < rssItems.size());
-        findViewById(R.id.playPause).setEnabled(rssItems.size() > 0);
+        updateButtonEnabledState();
 
         String title = "";
         String text = "";
@@ -330,6 +326,14 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         setTitle(title);
         setStatusText(shouldSpeak ? "Reading" : "Paused", rssItemSentenceIndex, itemPlayback.numberOfSentences());
         setPlaybackCurrentSentence(itemPlayback.getCurrentSentence());
+    }
+
+    private void updateButtonEnabledState() {
+        findViewById(R.id.previousFeed).setEnabled(rssFeedDescriptorIndex > 0);
+        findViewById(R.id.nextFeed).setEnabled(rssFeedDescriptorIndex < rssFeedDescriptors.size());
+        findViewById(R.id.previous).setEnabled(rssItemIndex > 0);
+        findViewById(R.id.next).setEnabled(rssItemIndex < rssItems.size());
+        findViewById(R.id.playPause).setEnabled(rssItems.size() > 0);
     }
 
     private void setTitle(String titleText) {
