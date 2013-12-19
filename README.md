@@ -17,6 +17,11 @@ Install Android SDK into your local maven repository:
 Detailed explanations on Maven Android project setup can be found in
 Sonatype's [Android Application Development with Maven](http://books.sonatype.com/mvnref-book/reference/android-dev.html)
 
+Improving playback experience 
+=============================
+
+For better playback experience install IVONA Text-to-Speech HQ (currently free beta).
+For other alternatives in TTS see [this article](http://www.geoffsimons.com/2012/06/7-best-android-text-to-speech-engines.html)
 
 Libraries
 =========
@@ -25,5 +30,3 @@ Libraries
       (as Maven dependency)
   - [jsoup 1.7.3](https://github.com/jhy/jsoup/tree/d599990c331989230a6e1d0e4fea9e577022cc9c)  
       (as Maven dependency)
-  - [Android-RSS-Reader-Library](https://github.com/matshofman/Android-RSS-Reader-Library)  
-      (as git submodule)
