@@ -65,8 +65,8 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         super.onCreate(savedInstanceState);
         Log.d(ID, "onCreate");
         setContentView(R.layout.main);
-
-        rssFeedSources = RssFeedSource.getFeeds();
+        
+        rssFeedSources = RssFeedSource.getFeeds(getResources().getXml(R.xml.feedly_opml));
 
         if (savedInstanceState != null) {
             rssFeedDescriptorIndex = savedInstanceState.getInt("rssFeedIndex");

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<opml version="1.0">
+    <head>
+        <title>Daniel subscriptions in feedly Cloud</title>
+    </head>
+    <body>
+        <outline text="Java" title="Java">
+            <outline type="rss" text="Java Code Geeks" title="Java Code Geeks" xmlUrl="http://feeds.feedburner.com/JavaCodeGeeks" htmlUrl="http://www.javacodegeeks.com"/>
+            <outline type="rss" text="Javalobby - The heart of the Java developer community" title="Javalobby - The heart of the Java developer community" xmlUrl="http://www.javalobby.org/forumRSS/18032.xml" htmlUrl="http://java.dzone.com/"/>
+            <outline type="rss" text="Java" title="Java" xmlUrl="http://www.oreillynet.com/pub/feed/7?format=rss2" htmlUrl="http://oreilly.com/java/"/>
+            <outline type="rss" text="Developer Resources for Java Technology" title="Developer Resources for Java Technology" xmlUrl="http://developers.sun.com/rss/java.xml"/>
+            <outline type="rss" text="Martin Fowler" title="Martin Fowler" xmlUrl="http://martinfowler.com/bliki/bliki.atom" htmlUrl="http://martinfowler.com"/>
+            <outline type="rss" text="Channel Java" title="Channel Java" xmlUrl="http://www.entwickler.com/xmlfeeds/?feed=java&amp;version=2.0"/>
+        </outline>
+        <outline text="Geek Humor" title="Geek Humor">
+            <outline type="rss" text="Geek And Poke" title="Geek And Poke" xmlUrl="http://feeds.feedburner.com/GeekAndPoke" htmlUrl="http://geek-and-poke.com/"/>
+            <outline type="rss" text="xkcd.com" title="xkcd.com" xmlUrl="http://xkcd.com/rss.xml" htmlUrl="http://xkcd.com/"/>
+            <outline type="rss" text="Dilbert Daily Strip" title="Dilbert Daily Strip" xmlUrl="http://feeds.dilbert.com/DilbertDailyStrip" htmlUrl="http://dilbert.com/"/>
+            <outline type="rss" text="The Oatmeal - Comics, Quizzes, &amp; Stories" title="The Oatmeal - Comics, Quizzes, &amp; Stories" xmlUrl="http://theoatmeal.com/feed/rss" htmlUrl="http://theoatmeal.com/"/>
+        </outline>
+        <outline text="global.must" title="global.must">
+            <outline type="rss" text="Google News: Schlagzeilen" title="Google News: Schlagzeilen" xmlUrl="http://news.google.de/news?pz=1&amp;cf=all&amp;ned=de&amp;hl=de&amp;output=rss" htmlUrl="http://news.google.de/news?pz=1&amp;ned=de&amp;hl=de"/>
+        </outline>
+        <outline text="Geek News" title="Geek News">
+            <outline type="rss" text="Wired Top Stories" title="Wired Top Stories" xmlUrl="http://feeds.wired.com/wired/index" htmlUrl="http://www.wired.com"/>
+            <outline type="rss" text="InfoQ Personalized Feed for Unregistered User - Register to upgrade!" title="InfoQ Personalized Feed for Unregistered User - Register to upgrade!" xmlUrl="http://www.infoq.com/rss/rss.action?token=0M0gkjbd23J4FTONTSIMpEMCXiXhTSRx" htmlUrl="http://www.infoq.com"/>
+            <outline type="rss" text="heise online News" title="heise online News" xmlUrl="http://www.heise.de/newsticker/heise-atom.xml" htmlUrl="http://www.heise.de/newsticker/"/>
+            <outline type="rss" text="Ars Technica" title="Ars Technica" xmlUrl="http://feeds.arstechnica.com/arstechnica/index/" htmlUrl="http://arstechnica.com"/>
+            <outline type="rss" text="Lifehacker" title="Lifehacker" xmlUrl="http://lifehacker.com/index.xml" htmlUrl="http://lifehacker.com"/>
+            <outline type="rss" text="Gizmodo" title="Gizmodo" xmlUrl="http://feeds.gawker.com/gizmodo/full" htmlUrl="http://gizmodo.com"/>
+            <outline type="rss" text="Slashdot" title="Slashdot" xmlUrl="http://rss.slashdot.org/Slashdot/slashdot" htmlUrl="http://slashdot.org/"/>
+        </outline>
+        <outline text="News" title="News">
+            <outline type="rss" text="Westfälische Nachrichten - Für Münster und das Münsterland - Warendorf" title="Westfälische Nachrichten - Für Münster und das Münsterland - Warendorf" xmlUrl="http://www.westfaelische-nachrichten.de/_export/rss/lokales/warendorf/index_wn.rss"/>
+            <outline type="rss" text="Lokalnachrichten Münster" title="Lokalnachrichten Münster" xmlUrl="http://www.westfaelische-nachrichten.de/_export/rss/lokales/muenster/index_wn.rss"/>
+            <outline type="rss" text="tagesschau.de - Die Nachrichten der ARD" title="tagesschau.de - Die Nachrichten der ARD" xmlUrl="http://www3.tagesschau.de/xml/tagesschau-meldungen/" htmlUrl="http://www.tagesschau.de"/>
+            <outline type="rss" text="Google News: Schlagzeilen" title="Google News: Schlagzeilen" xmlUrl="http://news.google.de/news?pz=1&amp;cf=all&amp;ned=de&amp;hl=de&amp;output=rss" htmlUrl="http://news.google.de/news?pz=1&amp;ned=de&amp;hl=de"/>
+        </outline>
+        <outline text="JUG" title="JUG">
+            <outline type="rss" text="Java User Group Münster" title="Java User Group Münster" xmlUrl="http://www.jug-muenster.de/feed/" htmlUrl="http://www.jug-muenster.de"/>
+        </outline>
+        <outline text="Projekte" title="Projekte">
+            <outline type="rss" text="dhiller's bitbucket.org feed" title="dhiller's bitbucket.org feed" xmlUrl="https://bitbucket.org/dhiller/rss/feed?token=d2f9ef17a00f843b370eb572b53bcffe"/>
+        </outline>
+        <outline type="rss" text="Picasa Web Albums - dbalster" title="Picasa Web Albums - dbalster" xmlUrl="http://picasaweb.google.com/data/feed/base/user/dbalster?alt=rss&amp;kind=album&amp;hl=en_US&amp;access=public" htmlUrl="https://picasaweb.google.com/112106349357971658459"/>
+        <outline type="rss" text="Picasa-Webalben" title="Picasa-Webalben" xmlUrl="http://picasaweb.google.com/data/feed/base/user/han.solo.gg?alt=rss&amp;kind=album&amp;hl=en_US&amp;access=public" htmlUrl="https://picasaweb.google.com/117522304614848565556"/>
+        <outline type="rss" text="Skyconquerors Facebook-Benachrichtigungen" title="Skyconquerors Facebook-Benachrichtigungen" xmlUrl="https://www.facebook.com/feeds/notifications.php?id=287372457769&amp;viewer=100000590010725&amp;key=AWj7PRb1GTNsboCb&amp;format=rss20" htmlUrl="https://www.facebook.com/notifications?id=287372457769"/>
+        <outline type="rss" text="Software Engineering Radio - the podcast for professional software developers" title="Software Engineering Radio - the podcast for professional software developers" xmlUrl="http://www.se-radio.net/feed/" htmlUrl="http://www.se-radio.net"/>
+        <outline type="rss" text="Official Gmail Blog" title="Official Gmail Blog" xmlUrl="http://gmailblog.blogspot.com/feeds/posts/default" htmlUrl="http://gmailblog.blogspot.com/"/>
+        <outline type="rss" text="Franz&amp;#8217; Java Blog" title="Franz&amp;#8217; Java Blog" xmlUrl="http://javablog.roboshow.de/feed/"/>
+        <outline type="rss" text="Deutsches Java Blog von Jörg Herbst" title="Deutsches Java Blog von Jörg Herbst" xmlUrl="http://www.joergherbst.de/feed/"/>
+        <outline type="rss" text="public static void main" title="public static void main" xmlUrl="http://barbantan.blogspot.com/feeds/posts/default"/>
+        <outline type="rss" text="Java ist auch eine Insel" title="Java ist auch eine Insel" xmlUrl="http://www.tutego.com/blog/javainsel/atom.xml"/>
+        <outline type="rss" text="Javablog" title="Javablog" xmlUrl="http://javablog.co.uk/feed/"/>
+        <outline type="rss" text="Official Google Mac Blog" title="Official Google Mac Blog" xmlUrl="http://googlemac.blogspot.com/feeds/posts/default" htmlUrl="http://googlemac.blogspot.com/"/>
+    </body>
+</opml>
