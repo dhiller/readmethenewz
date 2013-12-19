@@ -1,10 +1,7 @@
 package de.zalando.hackweek.read_me_the_newz;
 
-import android.content.Context;
-import android.os.AsyncTask;
-import android.os.PowerManager;
-import android.util.Log;
-import com.google.common.collect.ImmutableSet;
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.lang.String.format;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -14,8 +11,19 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Set;
 
-import static java.lang.String.format;
+import com.google.common.collect.ImmutableSet;
 
+import android.content.Context;
+import android.os.AsyncTask;
+import android.os.PowerManager;
+import android.util.Log;
+
+/**
+ * Downloads a URL and returns the downloaded content as a byte array. Subclasses have to override
+ * {@link #getUrl getUrl()} in order to provide an URL for an item of type {@code T}.
+ *
+ * @param  <T>  item type to download
+ */
 public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress, DownloadTask.Result<T>> {
 
     /**
@@ -23,10 +31,17 @@ public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress
      */
     public abstract static class Result<T> {
 
-        private T item;
-        
-        protected Result(T item) {
+        private final T item;
+
+        protected Result(final T item) {
             this.item = item;
+        }
+
+        /**
+         * Returns the item for this result.
+         */
+        public T getItem() {
+            return item;
         }
 
         /**
@@ -42,9 +57,9 @@ public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress
         }
 
         /**
-         * Returns the content encoding, or {@code null} if unknown or not successful.
+         * Returns the content type, or {@code null} if unknown or not successful.
          */
-        public String getContentEncoding() {
+        public String getContentType() {
             return null;
         }
 
@@ -53,10 +68,6 @@ public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress
          */
         public Exception getException() {
             return null;
-        }
-        
-        public T getItem() {
-            return item;
         }
     }
 
@@ -108,29 +119,49 @@ public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress
 
     private Context context;
 
+    private volatile int bufferSize = 8192;
+
     public DownloadTask(final Context context) {
         this.context = context;
     }
 
+    /** Sets the internal buffer size to use for the download. */
+    public DownloadTask<T> withBufferSize(final int bufferSize) {
+        checkArgument(bufferSize > 0, "buffer size must be positive: %s", bufferSize);
+        this.bufferSize = bufferSize;
+        return this;
+    }
+
     @Override
-    protected Result doInBackground(final T... urls) {
+    protected Result<T> doInBackground(final T... items) {
+
+        if (items == null || items.length < 1) {
+            return null;
+        }
+
+        if (items.length > 1) {
+            Log.w(ID, "Ignoring all download items except the first.");
+        }
 
         // take CPU lock to prevent CPU from going off if the user
         // presses the power button during download
-        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-        PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, getClass().getName());
-        wl.acquire();
+        final PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        final PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, getClass().getName());
 
+        wl.acquire();
         try {
-            return download(urls[0]);
+            return download(items[0]);
         } finally {
             wl.release();
         }
     }
 
-    protected abstract URL getUrl(T url);
+    /**
+     * Provides the download URL for a given {@code item}.
+     */
+    protected abstract URL getUrl(T item);
 
-    private Result download(final T item) {
+    private Result<T> download(final T item) {
         HttpURLConnection connection = null;
         try {
             final URL url = getUrl(item);
@@ -139,24 +170,28 @@ public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress
             // expect HTTP 200 OK, so we don't mistakenly save error report
             // instead of the file
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                return failed(format("Server returned %s: %s", //
-                        connection.getResponseCode(), connection.getResponseMessage()), url);
+                return failed(item, format("Server returned %s: %s (%s)",
+                        connection.getResponseCode(), connection.getResponseMessage(), url));
             }
 
             // this will be useful to display download percentage
             // might be -1: server did not report the length
             final int contentLength = connection.getContentLength();
-            String contentEncoding = connection.getContentEncoding();
+            final String contentType= connection.getContentType();
 
-            Log.d(ID, "Starting to download " + contentLength + " bytes (" + contentEncoding + ") from " + url);
+            Log.d(ID, "Starting to download " + contentLength + " bytes (" + connection.getHeaderFields() + ") from " + url);
 
             // download the file
             final ByteArrayOutputStream output = new ByteArrayOutputStream( //
-                    contentLength > -1 ? contentLength : 16384);
+                    contentLength > -1 ? Math.max(contentLength, bufferSize): bufferSize);
             final InputStream input = connection.getInputStream();
 
             try {
-                byte[] buffer = new byte[4096];
+                // hack to detect transparent compression
+                boolean transparentlyDecompressing = isTransparentlyDecompressing(input);
+                boolean totalBytesAvailable = !transparentlyDecompressing && contentLength > -1;
+
+                byte[] buffer = new byte[bufferSize];
                 long bytesReceived = 0;
 
                 for (int read; (read = input.read(buffer)) != -1;) {
@@ -169,7 +204,7 @@ public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress
                     bytesReceived += read;
 
                     // publishing the progress....
-                    publishProgress(contentLength > -1 ? //
+                    publishProgress(totalBytesAvailable ?
                             new Progress(bytesReceived, contentLength) : new Progress(bytesReceived));
 
                     output.write(buffer, 0, read);
@@ -178,10 +213,10 @@ public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress
                 input.close();
             }
 
-            return success(output.toByteArray(), contentEncoding, item);
+            return success(item, output.toByteArray(), contentType);
 
         } catch (Exception e) {
-            return failed(e, item);
+            return failed(item, e);
         } finally {
             if (connection != null) {
                 connection.disconnect();
@@ -189,11 +224,11 @@ public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress
         }
     }
 
-    private HttpURLConnection resolveRedirections(final URL url) throws IOException {
+    private static HttpURLConnection resolveRedirections(final URL url) throws IOException {
         return resolveRedirections(url, Collections.<String>emptySet());
     }
 
-    private HttpURLConnection resolveRedirections(final URL url, final Set<String> locations) throws IOException {
+    private static HttpURLConnection resolveRedirections(final URL url, final Set<String> locations) throws IOException {
         boolean disconnect = true;
 
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -211,7 +246,7 @@ public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress
             final String location = connection.getHeaderField("Location");
 
             if (location != null) {
-                Log.d(ID, url + "redirects to " + location);
+                Log.d(ID, url + " redirects to " + location);
                 connection.disconnect();
                 disconnect = false;
 
@@ -233,16 +268,24 @@ public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress
         }
     }
 
-    protected static <T> Result<T> success(final byte[] content, final String contentEncoding, T item) {
-        return new Result(item) {
+    /**
+     * Hack to determine if it's a transparently decompressing {@code InputStream}.
+     */
+    private static boolean isTransparentlyDecompressing(final InputStream input) {
+        final String name = input.getClass().getName();
+        return name.contains("GZIP") || name.contains("Deflate");
+    }
+
+    protected static <T> Result<T> success(final T item, final byte[] content, final String contentType) {
+        return new Result<T>(item) {
             @Override
             public boolean isSuccess() {
                 return true;
             }
 
             @Override
-            public String getContentEncoding() {
-                return contentEncoding;
+            public String getContentType() {
+                return contentType;
             }
 
             @Override
@@ -252,17 +295,17 @@ public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress
 
             @Override
             public String toString() {
-                return format("Result[%s: %s bytes]", contentEncoding, content == null ? -1 : content.length);
+                return format("Result[%s: %s bytes]", contentType, content == null ? -1 : content.length);
             }
         };
     }
 
-    protected static <T> Result<T> failed(final String message, T item) {
-        return failed(new RuntimeException(message), item);
+    protected static <T> Result<T> failed(final T item, final String message ) {
+        return failed(item, new RuntimeException(message));
     }
 
-    protected static <T> Result<T> failed(final Exception e, T item) {
-        return new Result(item) {
+    protected static <T> Result<T> failed(final T item, final Exception e) {
+        return new Result<T>(item) {
             @Override
             public boolean isSuccess() {
                 return false;
