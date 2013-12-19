@@ -19,6 +19,8 @@ import java.util.regex.Pattern;
 class ItemPlayback {
     
     private static final String ID = "ItemPlayback";
+    private static final int AFTER_TITLE_PAUSE_DURATION_MS = 500;
+    private static final int AFTER_ITEM_PAUSE_DURATION_MS = 1000;
 
     private ArrayList<String> sentences;
     private int sentenceIndex = 0;
@@ -28,6 +30,8 @@ class ItemPlayback {
     private TextToSpeech textToSpeech;
     private ItemPlaybackListener itemPlaybackListener = new ItemPlaybackListener();
     private String currentSentence;
+    private boolean playTitlePause;
+    private boolean playItemPause;
 
     ItemPlayback() {
         // Required for SUtteranceProgressListener
@@ -46,8 +50,22 @@ class ItemPlayback {
         final int listenerSetResult = textToSpeech.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener() {
             @Override
             public void onUtteranceCompleted(final String utteranceId) {
+                Log.d("TextToSpeech.OnUtteranceCompletedListener",String.format("utteranceId: %s",utteranceId));
                 if(!ItemPlayback.this.utteranceId.equals(utteranceId))
                     return;
+                
+                if(playTitlePause) {
+                    ItemPlayback.this.textToSpeech.playSilence(AFTER_TITLE_PAUSE_DURATION_MS, TextToSpeech.QUEUE_FLUSH, ttsParams);
+                    playTitlePause = false;
+                    return;
+                }
+                
+                if(playItemPause) {
+                    ItemPlayback.this.textToSpeech.playSilence(AFTER_ITEM_PAUSE_DURATION_MS, TextToSpeech.QUEUE_FLUSH, ttsParams);
+                    playItemPause = false;
+                    return;
+                }
+                
                 itemPlaybackListener.finishedItem(sentenceIndex, numberOfSentences(), currentSentence);
                 continueWithNextSentence();
             }
@@ -79,6 +97,12 @@ class ItemPlayback {
             currentSentence = sentences.get(sentenceIndex);
             textToSpeech.speak(improveForPlayback(currentSentence), TextToSpeech.QUEUE_FLUSH, ttsParams);
             itemPlaybackListener.beganWith(sentenceIndex, numberOfSentences(), currentSentence);
+            if(sentenceIndex==0) {
+                playTitlePause = true;
+            }
+            if(sentenceIndex==sentences.size()-1) {
+                playItemPause = true;
+            }
         } else {
             itemPlaybackListener.finishedAll(numberOfSentences());
         }
@@ -144,7 +168,7 @@ class ItemPlayback {
     }
 
     private String replaceSingleQuotedTermsWithDoubleQuoted(String result) {
-        return result.replaceAll("'([^ ]+)'","\"$1\"");
+        return result.replaceAll("'([^ ]+)'", "\"$1\"");
     }
 
     private String replaceAcronymsWithDottedUppercaseChars(String s) {
