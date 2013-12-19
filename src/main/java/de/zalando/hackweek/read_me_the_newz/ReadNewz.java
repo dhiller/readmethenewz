@@ -138,15 +138,6 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         itemPlayback.setSentenceIndex(rssItemSentenceIndex);
         itemPlayback.setItemPlaybackListener(itemPlaybackFeedBackProvider);
 
-        @SuppressWarnings("deprecation") // UtteranceProgressListener is API level 15
-        final int listenerSetResult = textToSpeech.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener() {
-            @Override
-            public void onUtteranceCompleted(final String utteranceId) {
-                itemPlayback.continueWithNextSentence();
-            }
-        });
-        Log.d(ID, "Result for setListener: " + listenerSetResult);
-
         updateRSSItems();
     }
 
@@ -161,22 +152,27 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
     // --- UI callbacks ---
 
+    @SuppressWarnings("UnusedParameters")
     public void nextFeed(final View v) {
         startPlaybackForNextFeed();
     }
 
+    @SuppressWarnings("UnusedParameters")
     public void previousFeed(final View v) {
         startPlaybackForPreviousFeed();
     }
 
+    @SuppressWarnings("UnusedParameters")
     public void previous(final View v) {
         playbackPreviousItem();
     }
 
+    @SuppressWarnings("UnusedParameters")
     public void next(final View v) {
         playbackNextItem();
     }
 
+    @SuppressWarnings("UnusedParameters")
     public void playPause(final View v) {
         shouldSpeak = !shouldSpeak;
         itemPlayback.toggleSpeaking();

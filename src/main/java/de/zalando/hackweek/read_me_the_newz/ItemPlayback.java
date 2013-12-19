@@ -1,6 +1,7 @@
 package de.zalando.hackweek.read_me_the_newz;
 
 import android.speech.tts.TextToSpeech;
+import android.util.Log;
 import de.zalando.hackweek.read_me_the_newz.rss.item.Item;
 import org.jsoup.Jsoup;
 
@@ -16,11 +17,13 @@ import java.util.regex.Pattern;
 * @author dhiller
 */
 class ItemPlayback {
+    
+    private static final String ID = "ItemPlayback";
 
     private ArrayList<String> sentences;
     private int sentenceIndex = 0;
     private boolean shouldSpeak = true;
-    private final UUID uuid = UUID.randomUUID();
+    private final String utteranceId = UUID.randomUUID().toString();
     private HashMap<String, String> ttsParams;
     private TextToSpeech textToSpeech;
     private ItemPlaybackListener itemPlaybackListener = new ItemPlaybackListener();
@@ -30,15 +33,25 @@ class ItemPlayback {
         // Required for SUtteranceProgressListener
         // see http://stackoverflow.com/questions/20296792/tts-utteranceprogresslistener-not-being-called
         ttsParams = new HashMap<String, String>() {
-
             {
-                put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, uuid.toString());
+                
+                put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
             }
         };
     }
 
     public void setTextToSpeech(TextToSpeech textToSpeech) {
         this.textToSpeech = textToSpeech;
+        @SuppressWarnings("deprecation") // UtteranceProgressListener is API level 15
+        final int listenerSetResult = textToSpeech.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener() {
+            @Override
+            public void onUtteranceCompleted(final String utteranceId) {
+                if(!ItemPlayback.this.utteranceId.equals(utteranceId))
+                    return;
+                continueWithNextSentence();
+            }
+        });
+        Log.d(ID, "Result for setListener: " + listenerSetResult);
     }
 
     public void setItemPlaybackListener(ItemPlaybackListener itemPlaybackListener) {
@@ -114,7 +127,7 @@ class ItemPlayback {
             final String group = matcher.group(0);
             StringBuilder replacement = new StringBuilder();
             for (int index = 0; index < group.length(); index++) {
-                replacement.append(" " + group.substring(index, index + 1));
+                replacement.append(" ").append(group.substring(index, index + 1));
             }
             result = result.replace(group, replacement.toString().substring(1));
         }
