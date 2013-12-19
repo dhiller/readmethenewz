@@ -105,15 +105,30 @@ class ItemPlayback {
     }
 
     public void setItemForPlayback(Item itemForPlayback) {
-        final String title = Jsoup.parse(itemForPlayback.getTitle()).text();
-        final String description = Jsoup.parse(itemForPlayback.getDescription()).text();
         final ArrayList<String> sentences = new ArrayList<String>();
-
-        // TODO Add date of article
-        sentences.add(title);
-        sentences.addAll(splitIntoSentences(description));
-        
+        sentences.add(getArticleTitle(itemForPlayback));
+        sentences.addAll(getArticleSentences(itemForPlayback));
         this.setSentences(sentences);
+    }
+
+    private List<String> getArticleSentences(Item itemForPlayback) {
+        return splitIntoSentences(sanitize(itemForPlayback.getDescription()));
+    }
+
+    private String getArticleTitle(Item itemForPlayback) {
+        return getArticleSource(itemForPlayback) + sanitize(itemForPlayback.getTitle());
+    }
+
+    private String getArticleSource(Item itemForPlayback) {
+        final String marker = sanitize(itemForPlayback.getMarker());
+        if (marker.isEmpty())
+            return "";
+        final int dotIndex = marker.indexOf(".");
+        return (dotIndex < 0 ? marker : marker.substring(0, dotIndex)) + ": ";
+    }
+
+    private String sanitize(String text) {
+        return Jsoup.parse(text).text();
     }
 
     private List<String> splitIntoSentences(String description) {
