@@ -1,7 +1,11 @@
 package de.zalando.hackweek.read_me_the_newz;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -36,7 +40,9 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     private final ItemPlayback itemPlayback = new ItemPlayback();
     private final ItemPlaybackFeedBackProvider itemPlaybackFeedBackProvider = new ItemPlaybackFeedBackProvider();
 
+    private final MediaButtonReceiver mediaButtonReceiver = new MediaButtonReceiver();
     private AudioManager audioManager;
+    private ComponentName remoteControlReceiver;
     private boolean hasAudioFocus;
 
     private TextToSpeech textToSpeech;
@@ -62,8 +68,6 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         Log.d(ID, "onCreate");
         setContentView(R.layout.main);
 
-        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-
         rssFeedDescriptors = RssFeedDescriptor.getFeeds();
 
         if (savedInstanceState != null) {
@@ -77,6 +81,9 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
             textToSpeech = new TextToSpeech(this, this);
         }
 
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        registerReceiver(mediaButtonReceiver, new IntentFilter(Intents.MEDIA_BUTTONS));
+        remoteControlReceiver = new ComponentName(this, RemoteControlReceiver.class);
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         requestAudioFocus();
     }
@@ -123,6 +130,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
             activeItemFetcher.cancel(true);
         }
         itemPlayback.stopSpeaking();
+        unregisterReceiver(mediaButtonReceiver);
         abandonAudioFocus();
     }
 
@@ -195,11 +203,17 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     private void audioFocusUpdated() {
         if (hasAudioFocus) {
+            audioManager.registerMediaButtonEventReceiver(remoteControlReceiver);
+
             if (shouldSpeak && !itemPlayback.isSpeaking()) {
                 itemPlayback.startSpeaking();
             }
-        } else if (itemPlayback.isSpeaking()) {
-            itemPlayback.stopSpeaking();
+        } else {
+            audioManager.unregisterMediaButtonEventReceiver(remoteControlReceiver);
+
+            if (itemPlayback.isSpeaking()) {
+                itemPlayback.stopSpeaking();
+            }
         }
     }
 
@@ -235,15 +249,15 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     // --- Overrides ---
 
-    @Override
-    public boolean dispatchKeyEvent(KeyEvent event) {
-        Log.d(ID, "dispatchKeyEvent: " + event.getKeyCode() + ", " + event.getAction());
-        handleMediaKeyEvent(event);
-        return super.dispatchKeyEvent(event);
-    }
+    // @Override
+    // public boolean dispatchKeyEvent(KeyEvent event) {
+    //     Log.d(ID, "dispatchKeyEvent: " + event.getKeyCode() + ", " + event.getAction());
+    //     handleMediaKeyEvent(event);
+    //     return super.dispatchKeyEvent(event);
+    // }
 
     private void handleMediaKeyEvent(KeyEvent keyEvent) {
-        if (keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+        if (keyEvent.getRepeatCount() == 0 && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
             handleMediaKeyEvent(keyEvent.getKeyCode());
         }
     }
@@ -441,6 +455,14 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         new Handler(Looper.getMainLooper()).post(runnable);
     }
 
+    public static final class Intents {
+        public static final String MEDIA_BUTTONS = "de.zalando.hackweek.read_me_the_newz.ReadNewz:MEDIA_BUTTONS";
+
+        private Intents() {
+            // no instances, please
+        }
+    }
+
     /** Downloads a RSS feed, updating progress information in the UI. */
     private final class RssFeedDownloadTask extends DownloadTask<RssFeedDescriptor> {
         RssFeedDownloadTask() {
@@ -609,6 +631,20 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
                     ReadNewz.this.setStatusText(status, index, total);
                 }
             });
+        }
+    }
+
+    /** Handles media button intents sent from {@link RemoteControlReceiver}. */
+    private final class MediaButtonReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(final Context context, final Intent intent) {
+            if (Intents.MEDIA_BUTTONS.equals(intent.getAction())) {
+                final KeyEvent keyEvent = (KeyEvent) intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                Log.d(ID, "Media button intent received: " + keyEvent);
+                if (keyEvent != null) {
+                    handleMediaKeyEvent(keyEvent);
+                }
+            }
         }
     }
 }
