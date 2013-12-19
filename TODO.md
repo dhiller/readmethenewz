@@ -5,7 +5,7 @@ Playback
   - (done) Add source before title (i.e. "slashdot: here goes the title")
   - (done) Replace single quoted terms with double quotes
   - (done) Replace hyphens between words with space
-  - Add pauses
+  - (done) Add pauses
     - issue after headline
     - issue after article
   - (optional) When playback is german, english words are uttered with german pronunciation, see [article](https://code.google.com/p/language-detection/)
@@ -30,8 +30,8 @@ Feed support
   - Atom
   - Blog (?)
   
-UI
-==
+UI improvements
+===============
   - Add article link
 
 General
