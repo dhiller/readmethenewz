@@ -131,9 +131,6 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             return;
         }
 
-        findViewById(R.id.previousFeed).setEnabled(true);
-        findViewById(R.id.nextFeed).setEnabled(true);
-
         itemPlayback.setTextToSpeech(textToSpeech);
         itemPlayback.setSentenceIndex(rssItemSentenceIndex);
         itemPlayback.setItemPlaybackListener(itemPlaybackFeedBackProvider);
@@ -181,17 +178,22 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
     // --- Others ---
 
     private void startPlaybackForNextFeed() {
-        rssFeedDescriptorIndex++;
-        if (rssFeedDescriptorIndex >= rssFeedDescriptors.size())
-            rssFeedDescriptorIndex = 0;
+        setRssFeedIndex(rssFeedDescriptorIndex + 1);
         updateRSSItems();
     }
 
     private void startPlaybackForPreviousFeed() {
-        rssFeedDescriptorIndex--;
+        setRssFeedIndex(rssFeedDescriptorIndex - 1);
+        updateRSSItems();
+    }
+
+    private void setRssFeedIndex(int feedIndex) {
+        rssFeedDescriptorIndex = feedIndex;
+        if (rssFeedDescriptorIndex >= rssFeedDescriptors.size())
+            rssFeedDescriptorIndex = 0;
         if (rssFeedDescriptorIndex < 0)
             rssFeedDescriptorIndex = rssFeedDescriptors.size() - 1;
-        updateRSSItems();
+        rssItemSentenceIndex = 0;
     }
 
     private void updateRSSItems() {
@@ -236,9 +238,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
     private void setItemForPlayback() {
 
-        findViewById(R.id.previous).setEnabled(rssItemIndex > 0);
-        findViewById(R.id.next).setEnabled(rssItemIndex < rssItems.size());
-        findViewById(R.id.playPause).setEnabled(rssItems.size() > 0);
+        updateButtonEnabledState();
 
         String title = "";
         String text = "";
@@ -257,6 +257,14 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         setTitle(title);
         setStatusText(shouldSpeak ? "Reading" : "Paused", rssItemSentenceIndex, itemPlayback.numberOfSentences());
         setPlaybackCurrentSentence(itemPlayback.getCurrentSentence());
+    }
+
+    private void updateButtonEnabledState() {
+        findViewById(R.id.previousFeed).setEnabled(rssFeedDescriptorIndex > 0);
+        findViewById(R.id.nextFeed).setEnabled(rssFeedDescriptorIndex < rssFeedDescriptors.size());
+        findViewById(R.id.previous).setEnabled(rssItemIndex > 0);
+        findViewById(R.id.next).setEnabled(rssItemIndex < rssItems.size());
+        findViewById(R.id.playPause).setEnabled(rssItems.size() > 0);
     }
 
     private void setTitle(String titleText) {
