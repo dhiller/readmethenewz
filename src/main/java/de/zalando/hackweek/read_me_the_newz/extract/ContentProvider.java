@@ -1,5 +1,7 @@
 
-package de.zalando.hackweek.read_me_the_newz.rss.item;
+package de.zalando.hackweek.read_me_the_newz.extract;
+
+import de.zalando.hackweek.read_me_the_newz.extract.rss.RssItem;
 
 import java.io.InputStream;
 import java.util.List;
@@ -19,7 +21,7 @@ public abstract class ContentProvider {
         return source;
     }
 
-    public List<Item> extract() throws Exception {
+    public List<RssItem> extract() throws Exception {
         return source().type().extract(this);
     }
 

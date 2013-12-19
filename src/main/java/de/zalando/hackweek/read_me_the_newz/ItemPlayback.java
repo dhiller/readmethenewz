@@ -2,7 +2,7 @@ package de.zalando.hackweek.read_me_the_newz;
 
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
-import de.zalando.hackweek.read_me_the_newz.rss.item.Item;
+import de.zalando.hackweek.read_me_the_newz.extract.rss.RssItem;
 import org.jsoup.Jsoup;
 
 import java.util.ArrayList;
@@ -151,23 +151,23 @@ class ItemPlayback {
         }
     }
 
-    public void setItemForPlayback(Item itemForPlayback) {
+    public void setItemForPlayback(RssItem rssItemForPlayback) {
         final ArrayList<String> sentences = new ArrayList<String>();
-        sentences.add(getArticleTitle(itemForPlayback));
-        sentences.addAll(getArticleSentences(itemForPlayback));
+        sentences.add(getArticleTitle(rssItemForPlayback));
+        sentences.addAll(getArticleSentences(rssItemForPlayback));
         this.setSentences(sentences);
     }
 
-    private List<String> getArticleSentences(Item itemForPlayback) {
-        return splitIntoSentences(sanitize(itemForPlayback.getDescription()));
+    private List<String> getArticleSentences(RssItem rssItemForPlayback) {
+        return splitIntoSentences(sanitize(rssItemForPlayback.getDescription()));
     }
 
-    private String getArticleTitle(Item itemForPlayback) {
-        return getArticleSource(itemForPlayback) + sanitize(itemForPlayback.getTitle());
+    private String getArticleTitle(RssItem rssItemForPlayback) {
+        return getArticleSource(rssItemForPlayback) + sanitize(rssItemForPlayback.getTitle());
     }
 
-    private String getArticleSource(Item itemForPlayback) {
-        final String marker = sanitize(itemForPlayback.getMarker());
+    private String getArticleSource(RssItem rssItemForPlayback) {
+        final String marker = sanitize(rssItemForPlayback.getMarker());
         if (marker.isEmpty())
             return "";
         final int dotIndex = marker.indexOf(".");

@@ -18,10 +18,10 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.google.common.base.Throwables;
-import de.zalando.hackweek.read_me_the_newz.rss.item.ByteArrayContentProvider;
-import de.zalando.hackweek.read_me_the_newz.rss.item.Item;
-import de.zalando.hackweek.read_me_the_newz.rss.item.Source;
-import de.zalando.hackweek.read_me_the_newz.rss.item.Type;
+import de.zalando.hackweek.read_me_the_newz.extract.ByteArrayContentProvider;
+import de.zalando.hackweek.read_me_the_newz.extract.rss.RssItem;
+import de.zalando.hackweek.read_me_the_newz.extract.Source;
+import de.zalando.hackweek.read_me_the_newz.extract.Type;
 import org.jsoup.Jsoup;
 
 import java.net.MalformedURLException;
@@ -53,7 +53,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     private List<RssFeedDescriptor> rssFeedDescriptors;
     private int rssFeedDescriptorIndex = 0;
 
-    private List<Item> rssItems;
+    private List<RssItem> rssRssItems;
     private int rssItemIndex = 0;
     private int rssItemSentenceIndex = 0;
 
@@ -377,7 +377,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     }
 
     private void playbackNextItem() {
-        if (rssItemIndex >= rssItems.size()) {
+        if (rssItemIndex >= rssRssItems.size()) {
             startPlaybackForNextFeed();
         } else {
             setRssItemIndex(rssItemIndex + 1);
@@ -401,12 +401,12 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         String title = "";
         String text = "";
-        final boolean hasItem = rssItems != null && rssItemIndex >= 0 && rssItems.size() > rssItemIndex;
+        final boolean hasItem = rssRssItems != null && rssItemIndex >= 0 && rssRssItems.size() > rssItemIndex;
         if (hasItem) {
-            final Item currentItem = rssItems.get(rssItemIndex);
-            title = Jsoup.parse(currentItem.getTitle()).text();
-            text = Jsoup.parse(currentItem.getDescription()).text();
-            itemPlayback.setItemForPlayback(currentItem);
+            final RssItem currentRssItem = rssRssItems.get(rssItemIndex);
+            title = Jsoup.parse(currentRssItem.getTitle()).text();
+            text = Jsoup.parse(currentRssItem.getDescription()).text();
+            itemPlayback.setItemForPlayback(currentRssItem);
             itemPlayback.setSentenceIndex(rssItemSentenceIndex);
             if (shouldSpeak && hasAudioFocus) {
                 itemPlayback.startSpeaking();
@@ -423,8 +423,8 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         findViewById(R.id.previousFeed).setEnabled(rssFeedDescriptorIndex > 0);
         findViewById(R.id.nextFeed).setEnabled(rssFeedDescriptorIndex < rssFeedDescriptors.size());
         findViewById(R.id.previous).setEnabled(rssItemIndex > 0);
-        findViewById(R.id.next).setEnabled(rssItemIndex < rssItems.size());
-        findViewById(R.id.playPause).setEnabled(rssItems.size() > 0);
+        findViewById(R.id.next).setEnabled(rssItemIndex < rssRssItems.size());
+        findViewById(R.id.playPause).setEnabled(rssRssItems.size() > 0);
     }
 
     private void setTitle(String titleText) {
@@ -552,7 +552,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     }
 
     /** Parses downloaded RSS content. */
-    private final class RssFeedParsingTask extends AsyncTask<DownloadTask.Result<RssFeedDescriptor>, Void, List<Item>> {
+    private final class RssFeedParsingTask extends AsyncTask<DownloadTask.Result<RssFeedDescriptor>, Void, List<RssItem>> {
         @Override
         protected void onPreExecute() {
             if (activeAsyncTask != this) {
@@ -563,7 +563,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
 
         @Override
-        protected List<Item> doInBackground(final DownloadTask.Result<RssFeedDescriptor>... results) {
+        protected List<RssItem> doInBackground(final DownloadTask.Result<RssFeedDescriptor>... results) {
 
             final DownloadTask.Result<RssFeedDescriptor> result = results[0];
             final RssFeedDescriptor descriptor = result.getItem();
@@ -579,8 +579,8 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
 
         @Override
-        protected void onPostExecute(final List<Item> result) {
-            if (activeAsyncTask != this) {
+        protected void onPostExecute(final List<RssItem> result) {
+            if (activeItemFetcher != this) {
                 return;
             }
 
@@ -592,7 +592,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
             setStatusTextIndeterminate("");
 
-            rssItems = result;
+            rssRssItems = result;
             rssItemIndex = 0;
             setItemForPlayback();
         }

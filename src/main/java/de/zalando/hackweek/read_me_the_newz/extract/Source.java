@@ -1,4 +1,4 @@
-package de.zalando.hackweek.read_me_the_newz.rss.item;
+package de.zalando.hackweek.read_me_the_newz.extract;
 
 import java.net.URI;
 
@@ -32,10 +32,6 @@ public class Source {
 
     public URI uri() {
         return uri;
-    }
-
-    public ContentProvider createProvider() {
-        return type().createProvider(this);
     }
 
 }

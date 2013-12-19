@@ -1,11 +1,12 @@
 
-package de.zalando.hackweek.read_me_the_newz.rss.item;
+package de.zalando.hackweek.read_me_the_newz.extract.rss;
+
+import de.zalando.hackweek.read_me_the_newz.extract.Item;
 
 import java.util.Date;
 
-public class Item implements Comparable<Item> {
+public class RssItem extends Item implements Comparable<RssItem> {
 
-    private Type type;
     private String marker;
 
     private String title;
@@ -13,15 +14,8 @@ public class Item implements Comparable<Item> {
     private String description;
     private Date from;
 
-    private boolean isNew;
-
-    public Item() {
+    public RssItem() {
         super();
-    }
-
-    @Override
-    public String toString() {
-        return getMarker() + ": " + getTitle() + (isNew() ? " (*)" : "");
     }
 
     public void setTitle(String title) {
@@ -48,14 +42,6 @@ public class Item implements Comparable<Item> {
         return description;
     }
 
-    public Type getType() {
-        return type;
-    }
-
-    public void setType(Type type) {
-        this.type = type;
-    }
-
     public String getMarker() {
         return marker;
     }
@@ -73,20 +59,24 @@ public class Item implements Comparable<Item> {
     }
 
     @Override
-    public int compareTo(Item another) {
+    public String toString() {
+        return "RssItem{" +
+                "type=" + getType() +
+                ", marker='" + marker + '\'' +
+                ", title='" + title + '\'' +
+                ", link='" + link + '\'' +
+                ", description='" + description + '\'' +
+                ", from=" + from +
+                '}';
+    }
+
+    @Override
+    public int compareTo(RssItem another) {
         if (this.getFrom() == null)
             return (another.getFrom() == null ? 0 : 1);
         return (another.getFrom() != null ? this.getFrom().compareTo(
                 another.getFrom())
                 * -1 : -1);
-    }
-
-    public void setNew() {
-        this.isNew = true;
-    }
-
-    public boolean isNew() {
-        return this.isNew;
     }
 
 }

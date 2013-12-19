@@ -1,4 +1,4 @@
-package de.zalando.hackweek.read_me_the_newz.rss.item;
+package de.zalando.hackweek.read_me_the_newz.extract;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
