@@ -30,8 +30,8 @@ Feed support
   - Atom
   - Blog (?)
   
-UI
-==
+UI improvements
+===============
   - Add article link
 
 General
