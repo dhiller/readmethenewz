@@ -1,0 +1,1 @@
+  - [Activity has leaked ServiceConnection](http://stackoverflow.com/questions/1992676/i-cant-get-rid-of-this-error-message-activity-app-name-has-leaked-servicecon)
