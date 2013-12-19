@@ -44,8 +44,7 @@ public final class RssExtractor {
     }
 
     public List<RssItem> extract(InputStream content)
-            throws FactoryConfigurationError, ParserConfigurationException,
-            SAXException, IOException {
+            throws FactoryConfigurationError, SAXException, IOException {
         saxParser.parse(new InputSource(new BufferedReader(
                 new InputStreamReader(content, Charset.forName("utf-8")))),
                 rssHandler);
