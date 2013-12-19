@@ -129,9 +129,32 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     @Override
     public void onAudioFocusChange(final int focusChange) {
-        final boolean newAudioFocus = focusChange == AudioManager.AUDIOFOCUS_GAIN;
 
-        Log.d(ID, "onAudioFocusChange(): " + focusChange + ", " + newAudioFocus);
+        final boolean newAudioFocus;
+        switch (focusChange) {
+        case AudioManager.AUDIOFOCUS_GAIN :
+            Log.d(ID, "Regained audio focus");
+            newAudioFocus = true;
+            break;
+
+        case AudioManager.AUDIOFOCUS_LOSS :
+            Log.d(ID, "Lost audio focus");
+            newAudioFocus = false;
+            abandonAudioFocus();
+            break;
+
+        case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT :
+            Log.d(ID, "Ignoring transient audio focus loss");
+            return;
+
+        case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK :
+            Log.d(ID, "Ignoring transient, duckable audio focus loss");
+            return;
+
+        default :
+            Log.i(ID, "Ignoring audio focus loss change event of type " + focusChange);
+            return;
+        }
 
         runOnUiThread(new Runnable() {
             @Override
