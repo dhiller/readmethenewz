@@ -1,6 +1,7 @@
 package de.zalando.hackweek.read_me_the_newz;
 
 import android.app.Activity;
+import android.content.Context;
 import android.media.AudioManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -27,12 +28,15 @@ import java.util.Locale;
 
 import static java.lang.String.format;
 
-public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
+public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChangeListener, TextToSpeech.OnInitListener {
 
     private static final String ID = "ReadNewz";
 
     private final ItemPlayback itemPlayback = new ItemPlayback();
     private final ItemPlaybackFeedBackProvider itemPlaybackFeedBackProvider = new ItemPlaybackFeedBackProvider();
+
+    private AudioManager audioManager;
+    private boolean hasAudioFocus;
 
     private TextToSpeech textToSpeech;
     private boolean shouldSpeak = true;
@@ -57,6 +61,8 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         Log.d(ID, "onCreate");
         setContentView(R.layout.main);
 
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+
         rssFeedDescriptors = RssFeedDescriptor.getFeeds();
 
         if (savedInstanceState != null) {
@@ -71,6 +77,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         }
 
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
+        requestAudioFocus();
     }
 
     @Override
@@ -115,6 +122,61 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             activeItemFetcher.cancel(true);
         }
         itemPlayback.stopSpeaking();
+        abandonAudioFocus();
+    }
+
+    // --- AudioManager.OnAudioFocusChangeListener ---
+
+    @Override
+    public void onAudioFocusChange(final int focusChange) {
+        final boolean newAudioFocus = focusChange == AudioManager.AUDIOFOCUS_GAIN;
+
+        Log.d(ID, "onAudioFocusChange(): " + focusChange + ", " + newAudioFocus);
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updateAudioFocus(newAudioFocus);
+            }
+        });
+    }
+
+    private void requestAudioFocus() {
+        Log.d(ID, "requestAudioFocus");
+
+        // Request audio focus for playback
+        final int result = audioManager.requestAudioFocus(this, //
+                AudioManager.STREAM_MUSIC,   // Use the music stream.
+                AudioManager.AUDIOFOCUS_GAIN // Request permanent focus.
+                );
+
+        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            updateAudioFocus(true);
+        }
+    }
+
+    private void abandonAudioFocus() {
+        Log.d(ID, "abandonAudioFocus");
+        if (audioManager.abandonAudioFocus(this) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            updateAudioFocus(false);
+        }
+    }
+
+    private void updateAudioFocus(final boolean newAudioFocus) {
+        if (newAudioFocus != hasAudioFocus) {
+            hasAudioFocus = newAudioFocus;
+            audioFocusUpdated();
+        }
+    }
+
+    private void audioFocusUpdated() {
+        if (hasAudioFocus) {
+            if (shouldSpeak && !itemPlayback.isSpeaking()) {
+                itemPlayback.startSpeaking();
+            }
+        } else if (itemPlayback.isSpeaking()) {
+            itemPlayback.stopSpeaking();
+        }
     }
 
     // --- TextToSpeech.OnInitListener ---
@@ -179,7 +241,13 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
     public void playPause(final View v) {
         shouldSpeak = !shouldSpeak;
-        itemPlayback.toggleSpeaking();
+        if (shouldSpeak) {
+            if (hasAudioFocus) {
+                itemPlayback.startSpeaking();
+            }
+        } else {
+            itemPlayback.stopSpeaking();
+        }
     }
 
     // --- Others ---
@@ -253,8 +321,9 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             text = Jsoup.parse(currentItem.getDescription()).text();
             itemPlayback.setItemForPlayback(currentItem);
             itemPlayback.setSentenceIndex(rssItemSentenceIndex);
-            if (shouldSpeak)
+            if (shouldSpeak && hasAudioFocus) {
                 itemPlayback.startSpeaking();
+            }
         }
 
         setPlaybackCurrentSentence(text);
