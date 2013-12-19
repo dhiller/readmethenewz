@@ -13,7 +13,8 @@ Playback
 Control
 =======
   - Enable playback volume control using volume buttons
-  - Add media button support
+  - (done) Add media button support
+  - Implement support for headset plug events
   - (optional) add bluetooth controls
   - (optional) voice control
 
