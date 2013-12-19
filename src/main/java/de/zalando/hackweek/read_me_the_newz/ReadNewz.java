@@ -1,6 +1,7 @@
 package de.zalando.hackweek.read_me_the_newz;
 
 import android.app.Activity;
+import android.media.AudioManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -68,6 +69,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
             textToSpeech = new TextToSpeech(this, this);
         }
 
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
     }
 
     @Override
