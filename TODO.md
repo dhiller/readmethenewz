@@ -4,6 +4,7 @@ Playback
   - Add pauses
     - issue after headline
     - issue after article
+  - (optional) When playback is german, english words are uttered with german pronunciation, see [article](https://code.google.com/p/language-detection/)
     
 Feed import
 ===========
@@ -13,6 +14,10 @@ Feed support
 ============
   - Atom
   - Blog (?)
+  
+UI
+==
+  - Add article link
 
 General
 =======
