@@ -291,6 +291,10 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         }
     }
 
+    static void postToMainLoop(Runnable runnable) {
+        new Handler(Looper.getMainLooper()).post(runnable);
+    }
+
     private final class RssFeedDownloadTask extends DownloadTask<RssFeedDescriptor> {
         RssFeedDownloadTask() {
             super(ReadNewz.this);
@@ -416,8 +420,7 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
 
         @Override
         void finishedAll(int total) {
-            Handler refresh = new Handler(Looper.getMainLooper());
-            refresh.post(new Runnable() {
+            postToMainLoop(new Runnable() {
                 @Override
                 public void run() {
                     playbackNextItem();
@@ -426,14 +429,12 @@ public class ReadNewz extends Activity implements TextToSpeech.OnInitListener {
         }
 
         private void setStatusText(final String status, final int index, final int total) {
-            Handler refresh = new Handler(Looper.getMainLooper());
-            refresh.post(new Runnable() {
+            postToMainLoop(new Runnable() {
                 @Override
                 public void run() {
                     ReadNewz.this.setStatusText(status, index, total);
                 }
             });
         }
-
     }
 }
