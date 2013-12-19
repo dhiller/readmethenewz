@@ -48,6 +48,7 @@ class ItemPlayback {
             public void onUtteranceCompleted(final String utteranceId) {
                 if(!ItemPlayback.this.utteranceId.equals(utteranceId))
                     return;
+                itemPlaybackListener.finishedItem(sentenceIndex, numberOfSentences(), currentSentence);
                 continueWithNextSentence();
             }
         });
@@ -67,7 +68,6 @@ class ItemPlayback {
     public void continueWithNextSentence() {
         if (!shouldSpeak)
             return;
-        itemPlaybackListener.finishedItem(sentenceIndex, numberOfSentences(), currentSentence);
         sentenceIndex++;
         startSpeaking();
     }
