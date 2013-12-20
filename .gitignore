@@ -1,0 +1,8 @@
+/target
+
+# Eclipse-specific ignores
+/bin
+/gen
+/.project
+/.classpath
+/.settings
