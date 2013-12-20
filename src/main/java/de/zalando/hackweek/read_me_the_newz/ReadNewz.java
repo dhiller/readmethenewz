@@ -19,6 +19,9 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -348,6 +351,33 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
             }
         } else {
             itemPlayback.stopSpeaking();
+        }
+    }
+
+    // -- Option Menu ---
+
+    @Override
+    public boolean onCreateOptionsMenu(final Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_options_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(final MenuItem item) {
+
+        // Handle item selection
+        switch (item.getItemId()) {
+        case R.id.close :
+            shouldSpeak = false;
+            itemPlayback.stopSpeaking();
+            abandonAudioFocus();
+            cancelNotification();
+            finish();
+            return true;
+
+        default :
+            return super.onOptionsItemSelected(item);
         }
     }
 
