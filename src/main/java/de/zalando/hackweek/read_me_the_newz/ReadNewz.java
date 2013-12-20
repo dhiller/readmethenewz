@@ -143,6 +143,8 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         unregisterReceiver(mediaButtonReceiver);
         abandonAudioFocus();
 
+        cancelNotification();
+
         if (textToSpeech != null) {
             textToSpeech.shutdown();
             textToSpeech = null;
@@ -387,6 +389,10 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     private void updateNotification(final Notification notification) {
         Log.d(ID, "updateNotification");
         notificationManager.notify(ID, NOTIFICATION_ID, notification);
+    }
+
+    private void cancelNotification() {
+        notificationManager.cancel(ID, NOTIFICATION_ID);
     }
 
     // --- Others ---
