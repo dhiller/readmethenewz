@@ -65,7 +65,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         super.onCreate(savedInstanceState);
         Log.d(ID, "onCreate");
         setContentView(R.layout.main);
-        
+
         rssFeedSources = RssFeedSource.getFeeds(getResources().getXml(R.xml.feedly_opml));
 
         if (savedInstanceState != null) {
@@ -346,10 +346,12 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     private void setRssFeedIndex(int feedIndex) {
         rssFeedDescriptorIndex = feedIndex;
-        if (rssFeedDescriptorIndex >= rssFeedSources.size())
+        if (rssFeedDescriptorIndex >= rssFeedSources.size()) {
             rssFeedDescriptorIndex = 0;
-        if (rssFeedDescriptorIndex < 0)
+        }
+        if (rssFeedDescriptorIndex < 0) {
             rssFeedDescriptorIndex = rssFeedSources.size() - 1;
+        }
         rssItemSentenceIndex = 0;
     }
 
@@ -461,10 +463,6 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         activeAsyncTask = asyncTask;
         asyncTask.execute(params);
-    }
-
-    static void postToMainLoop(Runnable runnable) {
-        new Handler(Looper.getMainLooper()).post(runnable);
     }
 
     public static final class Intents {
@@ -626,7 +624,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         @Override
         void finishedAll(int total) {
-            postToMainLoop(new Runnable() {
+            runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     playbackNextItem();
@@ -635,7 +633,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
 
         private void setStatusText(final String status, final int index, final int total) {
-            postToMainLoop(new Runnable() {
+            runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     ReadNewz.this.setStatusText(status, index, total);
