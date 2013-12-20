@@ -1,7 +1,10 @@
 package de.zalando.hackweek.read_me_the_newz;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.lang.String.format;
+import android.content.Context;
+import android.os.AsyncTask;
+import android.os.PowerManager;
+import android.util.Log;
+import com.google.common.collect.ImmutableSet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -11,12 +14,9 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
-
-import android.content.Context;
-import android.os.AsyncTask;
-import android.os.PowerManager;
-import android.util.Log;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.String.format;
 
 /**
  * Downloads a URL and returns the downloaded content as a byte array. Subclasses have to override
@@ -238,29 +238,33 @@ public abstract class DownloadTask<T> extends AsyncTask<T, DownloadTask.Progress
             connection.setInstanceFollowRedirects(false);
             connection.connect();
 
-            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                throw new IOException(format("Server returned %s: %s", //
-                        connection.getResponseCode(), connection.getResponseMessage()));
+            switch (connection.getResponseCode()) {
+                case HttpURLConnection.HTTP_OK: 
+                    disconnect = false;
+                    return connection;
+                case HttpURLConnection.HTTP_MOVED_PERM:
+                case HttpURLConnection.HTTP_MOVED_TEMP:
+                case HttpURLConnection.HTTP_SEE_OTHER:
+                case 307: // temporary redirect
+                    break;
+                
+                default:
+                    throw new IOException(format("Server returned %s: %s", //
+                            connection.getResponseCode(), connection.getResponseMessage()));                    
             }
 
-            final String location = connection.getHeaderField("Location");
+            final String location = checkNotNull(connection.getHeaderField("Location"));
 
-            if (location != null) {
-                Log.d(ID, url + " redirects to " + location);
-                connection.disconnect();
-                disconnect = false;
-
-                if (locations.contains(location)) {
-                    throw new IOException("Cyclic redirects: " + locations);
-                }
-
-                return resolveRedirections(new URL(location),
-                        ImmutableSet.<String>builder().addAll(locations).add(location).build());
-            }
-
+            Log.d(ID, url + " redirects to " + location);
+            connection.disconnect();
             disconnect = false;
-            return connection;
 
+            if (locations.contains(location)) {
+                throw new IOException("Cyclic redirects: " + locations);
+            }
+
+            return resolveRedirections(new URL(location),
+                    ImmutableSet.<String>builder().addAll(locations).add(location).build());
         } finally {
             if (disconnect) {
                 connection.disconnect();
