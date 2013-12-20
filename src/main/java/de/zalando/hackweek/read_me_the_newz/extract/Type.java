@@ -1,20 +1,20 @@
 
 package de.zalando.hackweek.read_me_the_newz.extract;
 
-import de.zalando.hackweek.read_me_the_newz.extract.rss.RssExtractor;
-import de.zalando.hackweek.read_me_the_newz.extract.rss.RssItem;
+import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedExtractor;
+import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedItem;
 
 import java.io.InputStream;
 import java.util.List;
 
 public enum Type {
 
-    RSS {
+    FEED {
         @Override
-        public List<RssItem> extract(ContentProvider p) throws Exception {
+        public List<FeedItem> extract(ContentProvider p) throws Exception {
             final InputStream content = p.provideContent();
             try {
-                return new RssExtractor(p.source()).extract(content);
+                return new FeedExtractor(p.source()).extract(content);
             } finally {
                 content.close();
             }
@@ -25,6 +25,6 @@ public enum Type {
     private Type() {
     }
 
-    public abstract List<RssItem> extract(ContentProvider p) throws Exception;
+    public abstract List<FeedItem> extract(ContentProvider p) throws Exception;
 
 }

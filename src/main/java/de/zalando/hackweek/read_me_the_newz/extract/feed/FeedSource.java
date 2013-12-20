@@ -1,4 +1,4 @@
-package de.zalando.hackweek.read_me_the_newz.extract.rss;
+package de.zalando.hackweek.read_me_the_newz.extract.feed;
 
 import android.content.res.XmlResourceParser;
 import com.google.common.base.Throwables;
@@ -19,17 +19,17 @@ import java.util.regex.Pattern;
 /**
  * @author dhiller
  */
-public class RssFeedSource extends Source {
+public class FeedSource extends Source {
 
     private final Locale locale;
 
-    private RssFeedSource(URI uri, String description, Locale locale) {
-        super(description, description, Type.RSS, uri);
+    private FeedSource(URI uri, String description, Locale locale) {
+        super(description, description, Type.FEED, uri);
         this.locale = locale;
     }
 
-    public static List<RssFeedSource> getFeeds(XmlResourceParser xml) {
-        final List<RssFeedSource> result = new ArrayList<RssFeedSource>();
+    public static List<FeedSource> getFeeds(XmlResourceParser xml) {
+        final List<FeedSource> result = new ArrayList<FeedSource>();
         try {
             int next;
             while((next = xml.next()) != XmlPullParser.END_DOCUMENT) {
@@ -41,7 +41,7 @@ public class RssFeedSource extends Source {
                 final URI xmlUrl = new URI(xml.getAttributeValue(null, "xmlUrl"));
                 final String htmlUrl = xml.getAttributeValue(null, "htmlUrl");
                 final String longDescription = xml.getAttributeValue(null, "text");
-                result.add(new RssFeedSource(xmlUrl,longDescription, getLocale(htmlUrl)));
+                result.add(new FeedSource(xmlUrl, longDescription, getLocale(htmlUrl)));
             }
         } catch (XmlPullParserException e) {
             throw Throwables.propagate(e);
@@ -60,10 +60,6 @@ public class RssFeedSource extends Source {
         if("de".equals(tld))
             return Locale.GERMAN;
         return Locale.ENGLISH;
-    }
-
-    private static String getHostName(URI uri) {
-        return uri.getHost().substring(uri.getHost().indexOf(".") + 1);
     }
 
     private static String getTLD(String url) {

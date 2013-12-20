@@ -24,8 +24,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.google.common.base.Throwables;
 import de.zalando.hackweek.read_me_the_newz.extract.ByteArrayContentProvider;
-import de.zalando.hackweek.read_me_the_newz.extract.rss.RssFeedSource;
-import de.zalando.hackweek.read_me_the_newz.extract.rss.RssItem;
+import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedItem;
+import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedSource;
 import org.jsoup.Jsoup;
 
 import java.net.MalformedURLException;
@@ -58,10 +58,10 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     private AsyncTask<?, ?, ?> activeAsyncTask;
 
-    private List<RssFeedSource> rssFeedSources;
+    private List<FeedSource> feedSources;
     private int rssFeedDescriptorIndex = 0;
 
-    private List<RssItem> rssRssItems;
+    private List<FeedItem> rssFeedItems;
     private int rssItemIndex = 0;
     private int rssItemSentenceIndex = 0;
 
@@ -76,7 +76,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         Log.d(ID, "onCreate " + this);
         setContentView(R.layout.main);
 
-        rssFeedSources = RssFeedSource.getFeeds(getResources().getXml(R.xml.feedly_opml));
+        feedSources = FeedSource.getFeeds(getResources().getXml(R.xml.feedly_opml));
 
         if (savedInstanceState != null) {
             rssFeedDescriptorIndex = savedInstanceState.getInt("rssFeedIndex");
@@ -403,19 +403,19 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     private void setRssFeedIndex(int feedIndex) {
         rssFeedDescriptorIndex = feedIndex;
-        if (rssFeedDescriptorIndex >= rssFeedSources.size()) {
+        if (rssFeedDescriptorIndex >= feedSources.size()) {
             rssFeedDescriptorIndex = 0;
         }
         if (rssFeedDescriptorIndex < 0) {
-            rssFeedDescriptorIndex = rssFeedSources.size() - 1;
+            rssFeedDescriptorIndex = feedSources.size() - 1;
         }
         rssItemSentenceIndex = 0;
     }
 
     private void updateRSSItems() {
-        final RssFeedSource rssFeedSource = rssFeedSources.get(rssFeedDescriptorIndex);
+        final FeedSource feedSource = feedSources.get(rssFeedDescriptorIndex);
 
-        final Locale language = rssFeedSource.getLanguage();
+        final Locale language = feedSource.getLanguage();
         if (setLanguage(language)) {
             setPlaybackCurrentSentence("Language " + language + "not supported!");
             return;
@@ -424,15 +424,15 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         itemPlayback.stopSpeaking();
 
         TextView textView = (TextView) findViewById(R.id.rssHost);
-        textView.setText(rssFeedSource.longName(), TextView.BufferType.EDITABLE);
+        textView.setText(feedSource.longName(), TextView.BufferType.EDITABLE);
 
         setPlaybackCurrentSentence("");
 
-        executeAsyncTask(new RssFeedDownloadTask(), rssFeedSource);
+        executeAsyncTask(new RssFeedDownloadTask(), feedSource);
     }
 
     private void playbackNextItem() {
-        if (rssItemIndex >= rssRssItems.size()) {
+        if (rssItemIndex >= rssFeedItems.size()) {
             startPlaybackForNextFeed();
         } else {
             setRssItemIndex(rssItemIndex + 1);
@@ -456,12 +456,12 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         String title = "";
         String text = "";
-        final boolean hasItem = rssRssItems != null && rssItemIndex >= 0 && rssRssItems.size() > rssItemIndex;
+        final boolean hasItem = rssFeedItems != null && rssItemIndex >= 0 && rssFeedItems.size() > rssItemIndex;
         if (hasItem) {
-            final RssItem currentRssItem = rssRssItems.get(rssItemIndex);
-            title = Jsoup.parse(currentRssItem.getTitle()).text();
-            text = Jsoup.parse(currentRssItem.getDescription()).text();
-            itemPlayback.setItemForPlayback(currentRssItem);
+            final FeedItem currentFeedItem = rssFeedItems.get(rssItemIndex);
+            title = Jsoup.parse(currentFeedItem.getTitle()).text();
+            text = Jsoup.parse(currentFeedItem.getDescription()).text();
+            itemPlayback.setItemForPlayback(currentFeedItem);
             itemPlayback.setSentenceIndex(rssItemSentenceIndex);
             if (shouldSpeak && hasAudioFocus) {
                 itemPlayback.startSpeaking();
@@ -476,10 +476,10 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     private void updateButtonEnabledState() {
         findViewById(R.id.previousFeed).setEnabled(rssFeedDescriptorIndex > 0);
-        findViewById(R.id.nextFeed).setEnabled(rssFeedDescriptorIndex < rssFeedSources.size());
+        findViewById(R.id.nextFeed).setEnabled(rssFeedDescriptorIndex < feedSources.size());
         findViewById(R.id.previous).setEnabled(rssItemIndex > 0);
-        findViewById(R.id.next).setEnabled(rssItemIndex < rssRssItems.size());
-        findViewById(R.id.playPause).setEnabled(rssRssItems.size() > 0);
+        findViewById(R.id.next).setEnabled(rssItemIndex < rssFeedItems.size());
+        findViewById(R.id.playPause).setEnabled(rssFeedItems.size() > 0);
     }
 
     private void setTitle(String titleText) {
@@ -537,8 +537,10 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
     }
 
-    /** Downloads a RSS feed, updating progress information in the UI. */
-    private final class RssFeedDownloadTask extends DownloadTask<RssFeedSource> {
+    /**
+     * Downloads a feed, updating progress information in the UI.
+     */
+    private final class RssFeedDownloadTask extends DownloadTask<FeedSource> {
         RssFeedDownloadTask() {
             super(ReadNewz.this);
         }
@@ -549,7 +551,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
                 return;
             }
 
-            setStatusTextIndeterminate("Starting RSS feed download…");
+            setStatusTextIndeterminate("Starting feed download…");
         }
 
         @Override
@@ -572,7 +574,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
 
         @Override
-        protected void onPostExecute(final Result<RssFeedSource> result) {
+        protected void onPostExecute(final Result<FeedSource> result) {
             if (activeAsyncTask != this) {
                 return;
             }
@@ -584,8 +586,8 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
             }
 
             if (!result.isSuccess()) {
-                Log.e(ID, "RSS download failed", result.getException());
-                setStatusText("RSS download failed.", 0, 1);
+                Log.e(ID, "Feed download failed", result.getException());
+                setStatusText("Feed download failed.", 0, 1);
                 return;
             }
 
@@ -593,14 +595,14 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
 
         @Override
-        protected void onCancelled(final Result<RssFeedSource> result) {
+        protected void onCancelled(final Result<FeedSource> result) {
             if (activeAsyncTask == this) {
                 activeAsyncTask = null;
             }
         }
 
         @Override
-        protected URL getUrl(RssFeedSource url) {
+        protected URL getUrl(FeedSource url) {
             try {
                 return new URL(url.getUrl());
             } catch (MalformedURLException e) {
@@ -609,33 +611,35 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
     }
 
-    /** Parses downloaded RSS content. */
-    private final class RssFeedParsingTask extends AsyncTask<DownloadTask.Result<RssFeedSource>, Void, List<RssItem>> {
+    /**
+     * Parses downloaded feed content.
+     */
+    private final class RssFeedParsingTask extends AsyncTask<DownloadTask.Result<FeedSource>, Void, List<FeedItem>> {
         @Override
         protected void onPreExecute() {
             if (activeAsyncTask != this) {
                 return;
             }
 
-            setStatusTextIndeterminate("Processing RSS feed…");
+            setStatusTextIndeterminate("Processing feed…");
         }
 
         @Override
-        protected List<RssItem> doInBackground(final DownloadTask.Result<RssFeedSource>... results) {
+        protected List<FeedItem> doInBackground(final DownloadTask.Result<FeedSource>... results) {
 
-            final DownloadTask.Result<RssFeedSource> result = results[0];
-            final RssFeedSource descriptor = result.getItem();
+            final DownloadTask.Result<FeedSource> result = results[0];
+            final FeedSource descriptor = result.getItem();
 
             try {
                 return new ByteArrayContentProvider(descriptor, result.getContent()).extract();
             } catch (Exception e) {
-                Log.e(ID, "RSS parsing failed", result.getException());
+                Log.e(ID, "Feed parsing failed", result.getException());
                 return Collections.emptyList();
             }
         }
 
         @Override
-        protected void onPostExecute(final List<RssItem> result) {
+        protected void onPostExecute(final List<FeedItem> result) {
             if (activeAsyncTask != this) {
                 return;
             }
@@ -648,7 +652,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
             setStatusTextIndeterminate("");
 
-            rssRssItems = result;
+            rssFeedItems = result;
             rssItemIndex = 0;
             setItemForPlayback();
         }
@@ -711,7 +715,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         @Override
         public void onReceive(final Context context, final Intent intent) {
             if (Intents.MEDIA_BUTTONS.equals(intent.getAction())) {
-                final KeyEvent keyEvent = (KeyEvent) intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                final KeyEvent keyEvent = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
                 Log.d(ID, "Media button intent received: " + keyEvent);
                 if (keyEvent != null) {
                     handleMediaKeyEvent(keyEvent);

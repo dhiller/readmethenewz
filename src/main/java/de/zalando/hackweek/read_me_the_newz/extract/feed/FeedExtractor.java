@@ -1,4 +1,4 @@
-package de.zalando.hackweek.read_me_the_newz.extract.rss;
+package de.zalando.hackweek.read_me_the_newz.extract.feed;
 
 import de.zalando.hackweek.read_me_the_newz.extract.Source;
 import org.xml.sax.InputSource;
@@ -22,18 +22,18 @@ import java.util.TimeZone;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public final class RssExtractor {
+public final class FeedExtractor {
 
     final SAXParserFactory factory = SAXParserFactory.newInstance();
-    final RssHandler rssHandler;
+    final FeedHandler feedHandler;
     final SAXParser saxParser;
     final Source source;
 
-    public RssExtractor(Source s) throws ParserConfigurationException,
+    public FeedExtractor(Source s) throws ParserConfigurationException,
             SAXException {
         saxParser = factory.newSAXParser();
         this.source = checkNotNull(s);
-        this.rssHandler = new RssHandler(this.source);
+        this.feedHandler = new FeedHandler(this.source);
     }
 
     static DateFormat newRSSGMTDateFormat() {
@@ -43,17 +43,17 @@ public final class RssExtractor {
         return gmtDateFormat;
     }
 
-    public List<RssItem> extract(InputStream content)
+    public List<FeedItem> extract(InputStream content)
             throws FactoryConfigurationError, SAXException, IOException {
         saxParser.parse(new InputSource(new BufferedReader(
                 new InputStreamReader(content, Charset.forName("utf-8")))),
-                rssHandler);
-        return rssHandler.rssItems;
+                feedHandler);
+        return feedHandler.feedItems;
     }
 
-    public List<RssItem> extract(String fullRss) throws SAXException, IOException {
+    public List<FeedItem> extract(String fullRss) throws SAXException, IOException {
         saxParser.parse(new ByteArrayInputStream(fullRss.getBytes("UTF-8")),
-                rssHandler);
-        return rssHandler.rssItems;
+                feedHandler);
+        return feedHandler.feedItems;
     }
 }

@@ -1,11 +1,11 @@
 
-package de.zalando.hackweek.read_me_the_newz.extract.rss;
+package de.zalando.hackweek.read_me_the_newz.extract.feed;
 
 import de.zalando.hackweek.read_me_the_newz.extract.Item;
 
 import java.util.Date;
 
-public class RssItem extends Item implements Comparable<RssItem> {
+public class FeedItem extends Item implements Comparable<FeedItem> {
 
     private String marker;
 
@@ -14,7 +14,7 @@ public class RssItem extends Item implements Comparable<RssItem> {
     private String description;
     private Date from;
 
-    public RssItem() {
+    public FeedItem() {
         super();
     }
 
@@ -60,7 +60,7 @@ public class RssItem extends Item implements Comparable<RssItem> {
 
     @Override
     public String toString() {
-        return "RssItem{" +
+        return "FeedItem{" +
                 "type=" + getType() +
                 ", marker='" + marker + '\'' +
                 ", title='" + title + '\'' +
@@ -71,7 +71,7 @@ public class RssItem extends Item implements Comparable<RssItem> {
     }
 
     @Override
-    public int compareTo(RssItem another) {
+    public int compareTo(FeedItem another) {
         if (this.getFrom() == null)
             return (another.getFrom() == null ? 0 : 1);
         return (another.getFrom() != null ? this.getFrom().compareTo(

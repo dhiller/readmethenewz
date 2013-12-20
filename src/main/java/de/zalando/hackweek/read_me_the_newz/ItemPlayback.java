@@ -2,7 +2,7 @@ package de.zalando.hackweek.read_me_the_newz;
 
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
-import de.zalando.hackweek.read_me_the_newz.extract.rss.RssItem;
+import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedItem;
 import org.jsoup.Jsoup;
 
 import java.util.ArrayList;
@@ -14,10 +14,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
-* @author dhiller
-*/
+ * @author dhiller
+ */
 class ItemPlayback {
-    
+
     private static final String ID = "ItemPlayback";
 
     private ArrayList<String> sentences;
@@ -35,17 +35,16 @@ class ItemPlayback {
         // see http://stackoverflow.com/questions/20296792/tts-utteranceprogresslistener-not-being-called
         ttsParams = new HashMap<String, String>() {
             {
-                
+
                 put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
             }
         };
     }
-    
+
     enum PauseType {
         AFTER_TITLE(750, true),
         AFTER_ITEM(1500, true),
-        NONE(0, false),
-        ;
+        NONE(0, false),;
         private final int duration;
         private final boolean issuePause;
 
@@ -56,10 +55,9 @@ class ItemPlayback {
 
         private static PauseType getPauseTypeForIndexValue(int size, int sentenceIndex1) {
             final PauseType newPauseType;
-            if(sentenceIndex1 ==0) {
+            if (sentenceIndex1 == 0) {
                 newPauseType = AFTER_TITLE;
-            } else
-            if(sentenceIndex1== size -1) {
+            } else if (sentenceIndex1 == size - 1) {
                 newPauseType = AFTER_ITEM;
             } else {
                 newPauseType = NONE;
@@ -67,14 +65,14 @@ class ItemPlayback {
             return newPauseType;
         }
 
-        public void issuePause(TextToSpeech tts, HashMap<String,String> arguments) {
-            tts.playSilence(duration,TextToSpeech.QUEUE_FLUSH,arguments);
+        public void issuePause(TextToSpeech tts, HashMap<String, String> arguments) {
+            tts.playSilence(duration, TextToSpeech.QUEUE_FLUSH, arguments);
         }
 
         public boolean isIssuePause() {
             return issuePause;
         }
-        
+
     }
 
     public void setTextToSpeech(TextToSpeech textToSpeech) {
@@ -83,16 +81,16 @@ class ItemPlayback {
         final int listenerSetResult = textToSpeech.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener() {
             @Override
             public void onUtteranceCompleted(final String utteranceId) {
-                Log.d("TextToSpeech.OnUtteranceCompletedListener",String.format("utteranceId: %s",utteranceId));
-                if(!ItemPlayback.this.utteranceId.equals(utteranceId))
+                Log.d("TextToSpeech.OnUtteranceCompletedListener", String.format("utteranceId: %s", utteranceId));
+                if (!ItemPlayback.this.utteranceId.equals(utteranceId))
                     return;
-                
+
                 if (pauseType.isIssuePause()) {
                     pauseType.issuePause(ItemPlayback.this.textToSpeech, ttsParams);
                     pauseType = PauseType.NONE;
                     return;
                 }
-                
+
                 itemPlaybackListener.finishedItem(sentenceIndex, numberOfSentences(), currentSentence);
                 continueWithNextSentence();
             }
@@ -101,7 +99,7 @@ class ItemPlayback {
     }
 
     public void setItemPlaybackListener(ItemPlaybackListener itemPlaybackListener) {
-        if(itemPlaybackListener ==null)
+        if (itemPlaybackListener == null)
             throw new IllegalArgumentException(("itemPlaybackListener is null!"));
         this.itemPlaybackListener = itemPlaybackListener;
     }
@@ -140,34 +138,26 @@ class ItemPlayback {
     }
 
     public int numberOfSentences() {
-        return (sentences!=null?sentences.size():0);
+        return (sentences != null ? sentences.size() : 0);
     }
 
-    public void toggleSpeaking() {
-        if (isSpeaking()) {
-            stopSpeaking();
-        } else {
-            startSpeaking();
-        }
-    }
-
-    public void setItemForPlayback(RssItem rssItemForPlayback) {
+    public void setItemForPlayback(FeedItem feedItemForPlayback) {
         final ArrayList<String> sentences = new ArrayList<String>();
-        sentences.add(getArticleTitle(rssItemForPlayback));
-        sentences.addAll(getArticleSentences(rssItemForPlayback));
+        sentences.add(getArticleTitle(feedItemForPlayback));
+        sentences.addAll(getArticleSentences(feedItemForPlayback));
         this.setSentences(sentences);
     }
 
-    private List<String> getArticleSentences(RssItem rssItemForPlayback) {
-        return splitIntoSentences(sanitize(rssItemForPlayback.getDescription()));
+    private List<String> getArticleSentences(FeedItem feedItemForPlayback) {
+        return splitIntoSentences(sanitize(feedItemForPlayback.getDescription()));
     }
 
-    private String getArticleTitle(RssItem rssItemForPlayback) {
-        return getArticleSource(rssItemForPlayback) + sanitize(rssItemForPlayback.getTitle());
+    private String getArticleTitle(FeedItem feedItemForPlayback) {
+        return getArticleSource(feedItemForPlayback) + sanitize(feedItemForPlayback.getTitle());
     }
 
-    private String getArticleSource(RssItem rssItemForPlayback) {
-        final String marker = sanitize(rssItemForPlayback.getMarker());
+    private String getArticleSource(FeedItem feedItemForPlayback) {
+        final String marker = sanitize(feedItemForPlayback.getMarker());
         if (marker.isEmpty())
             return "";
         final int dotIndex = marker.indexOf(".");
