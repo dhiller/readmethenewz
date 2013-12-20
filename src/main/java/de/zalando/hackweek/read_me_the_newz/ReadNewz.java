@@ -1,6 +1,9 @@
 package de.zalando.hackweek.read_me_the_newz;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -12,6 +15,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.speech.tts.TextToSpeech;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -35,6 +40,9 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     private static final String ID = "ReadNewz";
 
+    /** ID of the ReadNewz notification for {@code NotificationManager}. */
+    private static final int NOTIFICATION_ID = 1;
+
     private final ItemPlayback itemPlayback = new ItemPlayback();
     private final ItemPlaybackFeedBackProvider itemPlaybackFeedBackProvider = new ItemPlaybackFeedBackProvider();
 
@@ -42,6 +50,8 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     private AudioManager audioManager;
     private ComponentName remoteControlReceiver;
     private boolean hasAudioFocus;
+
+    private NotificationManager notificationManager;
 
     private TextToSpeech textToSpeech;
     private boolean shouldSpeak = true;
@@ -63,7 +73,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(ID, "onCreate");
+        Log.d(ID, "onCreate " + this);
         setContentView(R.layout.main);
 
         rssFeedSources = RssFeedSource.getFeeds(getResources().getXml(R.xml.feedly_opml));
@@ -80,6 +90,8 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
 
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
         registerReceiver(mediaButtonReceiver, new IntentFilter(Intents.MEDIA_BUTTONS));
         remoteControlReceiver = new ComponentName(this, RemoteControlReceiver.class);
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
@@ -89,13 +101,13 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(ID, "onResume");
+        Log.d(ID, "onResume " + this);
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        Log.d(ID, "onSaveInstanceState");
+        Log.d(ID, "onSaveInstanceState " + this);
         outState.putInt("rssFeedIndex", rssFeedDescriptorIndex);
         outState.putInt("rssItemIndex", rssItemIndex);
         outState.putInt("rssItemSentenceIndex", rssItemSentenceIndex);
@@ -105,25 +117,25 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     @Override
     protected void onPause() {
         super.onPause();
-        Log.d(ID, "onPause");
+        Log.d(ID, "onPause " + this);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        Log.d(ID, "onStop");
+        Log.d(ID, "onStop " + this);
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
-        Log.d(ID, "onRestart");
+        Log.d(ID, "onRestart " + this);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.d(ID, "onDestroy");
+        Log.d(ID, "onDestroy " + this);
         if (activeAsyncTask != null) {
             activeAsyncTask.cancel(true);
         }
@@ -252,6 +264,11 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     // --- Overrides ---
 
+    @Override
+    protected void onNewIntent(final Intent intent) {
+        Log.d(ID, "onNewIntent " + this + ", " + intent);
+    }
+
     // @Override
     // public boolean dispatchKeyEvent(KeyEvent event) {
     //     Log.d(ID, "dispatchKeyEvent: " + event.getKeyCode() + ", " + event.getAction());
@@ -330,6 +347,46 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         } else {
             itemPlayback.stopSpeaking();
         }
+    }
+
+    // --- Notification ---
+
+    private NotificationCompat.Builder createNotification(CharSequence contentText) {
+        // The contentIntent will be executed when the user clicks on the notification
+        // This will be this activity
+        final Intent contentIntent = new Intent(this, getClass());
+        // Reuse a already running activity instead of launching a new one
+        contentIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        // The stack builder object will contain an artificial back stack for
+        // the started Activity. This ensures that navigating backward from
+        // the Activity leads out of your application to the Home screen.
+        final TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+
+        // Adds the back stack for the Intent (but not the Intent itself)
+        stackBuilder.addParentStack(ReadNewz.class);
+
+        // Adds the Intent that starts the Activity to the top of the stack
+        stackBuilder.addNextIntent(contentIntent);
+
+        final PendingIntent pendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        // Several thins are required for a notification to work: small icon,
+        // content intent, content title and content text. So require a
+        // content text as function parameter in order to ensure that a
+        // notification returned by this function is always displayable.
+
+        return new NotificationCompat.Builder(this)
+        .setOngoing(true)
+        .setSmallIcon(R.drawable.ic_launcher)
+        .setContentIntent(pendingIntent)
+        .setContentTitle(getResources().getString(R.string.app_name))
+        .setContentText(contentText);
+    }
+
+    private void updateNotification(final Notification notification) {
+        Log.d(ID, "updateNotification");
+        notificationManager.notify(ID, NOTIFICATION_ID, notification);
     }
 
     // --- Others ---
@@ -439,19 +496,26 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         setStatusText(status, 0, 0);
     }
 
-    private void setStatusText(String status, int index, int total) {
-        TextView textView = (TextView) findViewById(R.id.status);
+    private void setStatusText(final String status, final int index, final int total) {
+
+        final NotificationCompat.Builder notificationBuilder = createNotification(status);
+
+        final TextView textView = (TextView) findViewById(R.id.status);
         textView.setText(status, TextView.BufferType.EDITABLE);
-        ProgressBar bar = (ProgressBar) findViewById(R.id.readProgress);
+
+        final ProgressBar bar = (ProgressBar) findViewById(R.id.readProgress);
         if (index == 0 && total == 0) {
             bar.setIndeterminate(true);
             bar.setProgress(0);
             bar.setMax(1);
-        }else {
+        } else {
             bar.setIndeterminate(false);
             bar.setProgress(index);
             bar.setMax(total);
+            notificationBuilder.setProgress(total, index, false);
         }
+
+        updateNotification(notificationBuilder.build());
     }
 
     private <T> void executeAsyncTask(final AsyncTask<T, ?, ?> asyncTask, final T... params) {
