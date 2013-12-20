@@ -12,32 +12,32 @@ Playback
 
 Control
 =======
-  - Enable playback volume control using volume buttons
+  - (done) Enable playback volume control using volume buttons
   - (done) Add media button support
+  - (done) (optional) add bluetooth controls (partially working)
   - Implement support for headset plug events
-  - (optional) add bluetooth controls
   - (optional) voice control
 
 Notification
 ============
-  - Add notification with play/pause button
+  - (done) Add notification
+  - Add play/pause button
 
-Feed import
-===========
-  - To support feedly data export, add [OPML import](http://feedly.com/#opml)
+Feeds
+=====
+  - Feedly OPM support
+    - (done) support feedly data
+    - import feedly opml directly
 
 Feed support
 ============
-  - Atom
+  - (done) Atom
+  - Remember Last read item per feed
   - Blog (?)
-  
+  - HTML pages (?)
+  - (optional) Article followup support (for shortened articles)
+
 UI improvements
 ===============
   - Add a menu when Menu button is pressed (e.g. to terminate the app)
   - Add article link
-
-General
-=======
-  - Remember Last read item per feed
-  - (optional) Article followup support (for shortened articles)
-  - (optional) Replace own parser with [XmlPullParser](http://developer.android.com/reference/org/xmlpull/v1/XmlPullParser.html)
