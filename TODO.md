@@ -39,5 +39,5 @@ Feed support
 
 UI improvements
 ===============
-  - Add a menu when Menu button is pressed (e.g. to terminate the app)
+  - (done) Add a menu when Menu button is pressed (e.g. to terminate the app)
   - Add article link
