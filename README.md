@@ -3,9 +3,11 @@ Getting Started
 
 Set environment variable ANDROID_HOME to your local Android SDK installation.
 Fetch the Android SDKs needed by this project:
+
 - `$ANDROID_HOME/android update sdk --no-ui --all --filter android-10,android-19`
 
 Install Android SDK into your local maven repository:
+
 - `git clone https://github.com/mosabua/maven-android-sdk-deployer`
 - `cd maven-android-sdk-deployer`
 - `mvn install -P 2.3.3,4.4`
