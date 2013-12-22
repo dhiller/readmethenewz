@@ -1,18 +1,14 @@
 Getting Started
 ===============
 
-After cloning, initialize git submodules:
-  - `git submodule init`
-  - `git submodule update`
-
 Set environment variable ANDROID_HOME to your local Android SDK installation.
-Fetch the Android SDKs needed by this project:  
-  - `$ANDROID_HOME/android update sdk --no-ui --all --filter android-10,android-19`
+Fetch the Android SDKs needed by this project:
+- `$ANDROID_HOME/android update sdk --no-ui --all --filter android-10,android-19`
 
 Install Android SDK into your local maven repository:
-  - `git clone https://github.com/mosabua/maven-android-sdk-deployer`
-  - `cd maven-android-sdk-deployer`
-  - `mvn install -P 2.3.3,4.4`
+- `git clone https://github.com/mosabua/maven-android-sdk-deployer`
+- `cd maven-android-sdk-deployer`
+- `mvn install -P 2.3.3,4.4`
 
 Detailed explanations on Maven Android project setup can be found in
 Sonatype's [Android Application Development with Maven](http://books.sonatype.com/mvnref-book/reference/android-dev.html)
