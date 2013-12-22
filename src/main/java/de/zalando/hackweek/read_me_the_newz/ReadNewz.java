@@ -410,7 +410,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         return new NotificationCompat.Builder(this)
         .setOngoing(true)
-        .setSmallIcon(R.drawable.ic_launcher)
+        .setSmallIcon(R.drawable.app_logo)
         .setContentIntent(pendingIntent)
         .setContentTitle(getResources().getString(R.string.app_name))
         .setContentText(contentText);
