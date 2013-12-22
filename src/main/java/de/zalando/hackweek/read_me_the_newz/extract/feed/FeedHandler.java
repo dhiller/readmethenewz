@@ -48,34 +48,40 @@ final class FeedHandler extends DefaultHandler {
     @Override
     public void endElement(String uri, String localName, String qName)
             throws SAXException {
-        if (current != null
-                && isTitle(localName, qName)) {
-            current.setTitle(builder.toString());
-        }
-        if (current != null
-                && isDescription(localName, qName)) {
-            current.setDescription(builder.toString());
-        }
-        if (current != null && isLink(localName, qName)) {
-            current.setLink(builder.toString());
-        }
-        if (current != null
-                && isPubDate(localName, qName)) {
-            final String dateAsString = builder.toString();
-            try {
-                current.setFrom(FeedExtractor.newRSSGMTDateFormat().parse(dateAsString));
-            } catch (ParseException e) {
+        if (current != null) {
+            if (isTitle(localName, qName)) {
+                current.setTitle(builder.toString());
+            }
+            if (isDescription(localName, qName)) {
+                current.setDescription(builder.toString());
+            }
+            if (isLink(localName, qName)) {
+                current.setLink(builder.toString());
+            }
+            if (isPubDate(localName, qName)) {
+                final String dateAsString = builder.toString();
                 try {
-                    current.setFrom(new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateAsString));
-                } catch (ParseException e2) {
-                    throw Throwables.propagate(e2);
+                    current.setFrom(FeedExtractor.newRSSGMTDateFormat().parse(dateAsString));
+                } catch (ParseException e) {
+                    try {
+                        current.setFrom(new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateAsString));
+                    } catch (ParseException e2) {
+                        throw Throwables.propagate(e2);
+                    }
                 }
+            }
+            if (isGuid(localName, qName)) {
+                current.setGuid(builder.toString());
             }
         }
         if (isItem(localName, qName)) {
             feedItems.add(current);
             current = null;
         }
+    }
+
+    private boolean isGuid(String localName, String qName) {
+        return isElementNameContained(localName, qName, "guid");
     }
 
     private boolean isItem(String localName, String qName) {

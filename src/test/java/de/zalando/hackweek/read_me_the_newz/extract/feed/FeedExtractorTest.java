@@ -4,6 +4,7 @@ import com.google.common.base.Throwables;
 import de.zalando.hackweek.read_me_the_newz.extract.Source;
 import de.zalando.hackweek.read_me_the_newz.extract.Type;
 import org.hamcrest.Matchers;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -55,25 +56,42 @@ public class FeedExtractorTest {
 
     public static class Rss extends TestBase {
 
+        private String resourceName;
+        private FeedExtractor underTest;
+
+        @Before
+        public void setUp() {
+            setResourceName("/rss/heise-rss-formatted.xml");
+            underTest = newFeedExtractorFromSource(newSourceFrom(uriOfResource(getResourceName())));
+        }
+
         @Test
         public void feedExtractor() throws IOException, SAXException {
-            Source s = newSourceFrom(uriOfResource("/rss/heise-rss-formatted.xml"));
-            FeedExtractor underTest = newFeedExtractorFromSource(s);
-
-            List<FeedItem> items = underTest.extract(getClass().getResourceAsStream("/rss/heise-rss-formatted.xml"));
-            assertThat(items.isEmpty(), is(false));
+            List<FeedItem> items = extractItems();
             assertThat(items,
                     hasItems(
                             Matchers.<FeedItem>allOf(
                                     hasProperty("title", notNullValue()),
                                     hasProperty("description", notNullValue()),
                                     hasProperty("link", notNullValue()),
-                                    hasProperty("from", notNullValue())
+                                    hasProperty("from", notNullValue()),
+                                    hasProperty("guid", notNullValue())
                             )
                     )
             );
         }
 
+        private List<FeedItem> extractItems() throws SAXException, IOException {
+            return underTest.extract(getClass().getResourceAsStream(getResourceName()));
+        }
+
+        public String getResourceName() {
+            return resourceName;
+        }
+
+        public void setResourceName(String resourceName) {
+            this.resourceName = resourceName;
+        }
     }
 
 }
