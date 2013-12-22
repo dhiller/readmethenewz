@@ -55,39 +55,49 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
             <Button
+                    android:id="@+id/previousFeed"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/previousFeed"
-                    android:id="@+id/previousFeed" 
+                    android:background="@drawable/prev"
                     android:enabled="false"
                     android:onClick="previousFeed"
                     />
             <Button
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="&lt;&lt;"
                     android:id="@+id/previous"
-                    android:onClick="previous" android:layout_gravity="bottom" android:enabled="false"/>
-            <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="&gt; ||"
-                    android:id="@+id/playPause"
-                    android:onClick="playPause" android:layout_gravity="bottom" android:enabled="false"/>
-            <Button
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="&gt;&gt;"
-                    android:id="@+id/next"
-                    android:onClick="next" android:layout_gravity="bottom" android:enabled="false"/>
-            <Button
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/nextFeed"
-                    android:id="@+id/nextFeed"
-                    android:onClick="nextFeed"
+                    android:layout_gravity="bottom"
+                    android:background="@drawable/rewind"
                     android:enabled="false"
+                    android:onClick="previous"
                     />
+            <Button
+                   android:id="@+id/playPause"
+                   android:layout_width="wrap_content"
+                   android:layout_height="wrap_content"
+                   android:layout_gravity="bottom"
+                   android:background="@drawable/play_pause"
+                   android:enabled="false"
+                   android:onClick="playPause"
+                   />
+            <Button
+                   android:id="@+id/next"
+                   android:layout_width="wrap_content"
+                   android:layout_height="wrap_content"
+                   android:layout_gravity="bottom"
+                   android:background="@drawable/fast_forward"
+                   android:enabled="false"
+                   android:onClick="next"
+                   />
+            <Button
+                   android:id="@+id/nextFeed"
+                   android:layout_width="wrap_content"
+                   android:layout_height="wrap_content"
+                   android:background="@drawable/next"
+                   android:enabled="false"
+                   android:onClick="nextFeed"
+                   />
+
         </LinearLayout>
     </LinearLayout>
 </RelativeLayout>
