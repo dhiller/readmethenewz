@@ -10,6 +10,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -60,20 +61,7 @@ final class FeedHandler extends DefaultHandler {
             }
             if (isPubDate(localName, qName)) {
                 final String dateAsString = builder.toString();
-                try {
-                    current.setFrom(FeedExtractor.newRSSGMTDateFormat().parse(dateAsString));
-                } catch (ParseException e) {
-                    try {
-                        current.setFrom(new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateAsString));
-                    } catch (ParseException e2) {
-                        try {
-                            String gmtDateString = dateAsString.replaceAll("([+-][0-9]{2}:[0-9]{2})$", "GMT$1");
-                            current.setFrom(new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(gmtDateString));
-                        } catch (ParseException e3) {
-                            throw Throwables.propagate(e3);
-                        }
-                    }
-                }
+                current.setFrom(convertToDate(dateAsString));
             }
             if (isId(localName, qName)) {
                 current.setId(builder.toString());
@@ -83,6 +71,24 @@ final class FeedHandler extends DefaultHandler {
             feedItems.add(current);
             current = null;
         }
+    }
+
+    private Date convertToDate(String dateAsString) {
+        Date from;
+        try {
+            from = FeedExtractor.newRSSGMTDateFormat().parse(dateAsString);
+        } catch (ParseException e) {
+            try {
+                from = new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateAsString);
+            } catch (ParseException e2) {
+                try {
+                    from = new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateAsString.replaceAll("([+-][0-9]{2}:[0-9]{2})$", "GMT$1"));
+                } catch (ParseException e3) {
+                    throw Throwables.propagate(e3);
+                }
+            }
+        }
+        return from;
     }
 
     private boolean isId(String localName, String qName) {
