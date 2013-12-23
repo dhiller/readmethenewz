@@ -15,7 +15,6 @@ import java.util.List;
  */
 final class FeedHandler extends DefaultHandler {
 
-    public static final String ISO_8601_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZZZZZ";
     private final List<FeedItem> feedItems = new ArrayList<FeedItem>();
     private FeedItem current;
     private StringBuilder builder;

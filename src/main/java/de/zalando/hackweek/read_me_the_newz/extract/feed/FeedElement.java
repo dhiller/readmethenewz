@@ -45,6 +45,8 @@ enum FeedElement {
         }
     },
     OTHER(),;
+
+    private static final String ISO_8601_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZZZZZ";
     private final List<String> names;
 
     private FeedElement(String... names) {
@@ -86,10 +88,10 @@ enum FeedElement {
             from = FeedExtractor.newRSSGMTDateFormat().parse(dateAsString);
         } catch (ParseException e) {
             try {
-                from = new SimpleDateFormat(FeedHandler.ISO_8601_DATE_FORMAT).parse(dateAsString);
+                from = new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateAsString);
             } catch (ParseException e2) {
                 try {
-                    from = new SimpleDateFormat(FeedHandler.ISO_8601_DATE_FORMAT).parse(dateAsString.replaceAll("([+-][0-9]{2}:[0-9]{2})$", "GMT$1"));
+                    from = new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateAsString.replaceAll("([+-][0-9]{2}:[0-9]{2})$", "GMT$1"));
                 } catch (ParseException e3) {
                     throw Throwables.propagate(e3);
                 }
