@@ -30,6 +30,9 @@ public class FeedExtractorTest {
     @Ignore
     public abstract static class TestBase {
 
+        private String resourceName;
+        private FeedExtractor underTest;
+
         protected FeedExtractor newFeedExtractorFromSource(Source s) {
             try {
                 return new FeedExtractor(s);
@@ -52,21 +55,12 @@ public class FeedExtractorTest {
             }
         }
 
-    }
-
-    public static class Rss extends TestBase {
-
-        private String resourceName;
-        private FeedExtractor underTest;
-
         @Before
         public void setUp() {
-            setResourceName("/rss/heise-rss-formatted.xml");
-            underTest = newFeedExtractorFromSource(newSourceFrom(uriOfResource(getResourceName())));
         }
 
         @Test
-        public void feedExtractor() throws IOException, SAXException {
+        public void extract() throws IOException, SAXException {
             List<FeedItem> items = extractItems();
             assertThat(items,
                     hasItems(
@@ -75,14 +69,14 @@ public class FeedExtractorTest {
                                     hasProperty("description", notNullValue()),
                                     hasProperty("link", notNullValue()),
                                     hasProperty("from", notNullValue()),
-                                    hasProperty("guid", notNullValue())
+                                    hasProperty("id", notNullValue())
                             )
                     )
             );
         }
 
         private List<FeedItem> extractItems() throws SAXException, IOException {
-            return underTest.extract(getClass().getResourceAsStream(getResourceName()));
+            return getUnderTest().extract(getClass().getResourceAsStream(getResourceName()));
         }
 
         public String getResourceName() {
@@ -92,6 +86,36 @@ public class FeedExtractorTest {
         public void setResourceName(String resourceName) {
             this.resourceName = resourceName;
         }
+
+        public FeedExtractor getUnderTest() {
+            return underTest;
+        }
+
+        public void setUnderTest(FeedExtractor underTest) {
+            this.underTest = underTest;
+        }
+    }
+
+    public static class Rss extends TestBase {
+
+        @Override
+        @Before
+        public void setUp() {
+            setResourceName("/rss/heise-rss-formatted.xml");
+            setUnderTest(newFeedExtractorFromSource(newSourceFrom(uriOfResource(getResourceName()))));
+        }
+
+    }
+
+    public static class Atom extends TestBase {
+
+        @Override
+        @Before
+        public void setUp() {
+            setResourceName("/atom/martin-fowler-bliki.atom");
+            setUnderTest(newFeedExtractorFromSource(newSourceFrom(uriOfResource(getResourceName()))));
+        }
+
     }
 
 }

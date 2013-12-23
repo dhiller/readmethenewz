@@ -13,7 +13,7 @@ public class FeedItem extends Item implements Comparable<FeedItem> {
     private String link;
     private String description;
     private Date from;
-    private String guid;
+    private String id;
 
     public FeedItem() {
         super();
@@ -80,11 +80,11 @@ public class FeedItem extends Item implements Comparable<FeedItem> {
                 * -1 : -1);
     }
 
-    public void setGuid(String guid) {
-        this.guid = guid;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public String getGuid() {
-        return guid;
+    public String getId() {
+        return id;
     }
 }

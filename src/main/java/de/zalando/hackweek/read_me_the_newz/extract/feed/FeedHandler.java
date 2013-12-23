@@ -17,7 +17,7 @@ import java.util.List;
  */
 final class FeedHandler extends DefaultHandler {
 
-    public static final String ISO_8601_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
+    public static final String ISO_8601_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZZZZZ";
     final List<FeedItem> feedItems = new ArrayList<FeedItem>();
     FeedItem current;
     StringBuilder builder;
@@ -66,12 +66,17 @@ final class FeedHandler extends DefaultHandler {
                     try {
                         current.setFrom(new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateAsString));
                     } catch (ParseException e2) {
-                        throw Throwables.propagate(e2);
+                        try {
+                            String gmtDateString = dateAsString.replaceAll("([+-][0-9]{2}:[0-9]{2})$", "GMT$1");
+                            current.setFrom(new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(gmtDateString));
+                        } catch (ParseException e3) {
+                            throw Throwables.propagate(e3);
+                        }
                     }
                 }
             }
-            if (isGuid(localName, qName)) {
-                current.setGuid(builder.toString());
+            if (isId(localName, qName)) {
+                current.setId(builder.toString());
             }
         }
         if (isItem(localName, qName)) {
@@ -80,8 +85,8 @@ final class FeedHandler extends DefaultHandler {
         }
     }
 
-    private boolean isGuid(String localName, String qName) {
-        return isElementNameContained(localName, qName, "guid");
+    private boolean isId(String localName, String qName) {
+        return isElementNameContained(localName, qName, "guid", "id");
     }
 
     private boolean isItem(String localName, String qName) {
