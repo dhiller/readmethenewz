@@ -1,16 +1,13 @@
 package de.zalando.hackweek.read_me_the_newz.extract.feed;
 
-import com.google.common.base.Throwables;
+import static de.zalando.hackweek.read_me_the_newz.extract.feed.FeedElement.*;
+
 import de.zalando.hackweek.read_me_the_newz.extract.Source;
 import de.zalando.hackweek.read_me_the_newz.extract.Type;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -19,9 +16,9 @@ import java.util.List;
 final class FeedHandler extends DefaultHandler {
 
     public static final String ISO_8601_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZZZZZ";
-    final List<FeedItem> feedItems = new ArrayList<FeedItem>();
-    FeedItem current;
-    StringBuilder builder;
+    private final List<FeedItem> feedItems = new ArrayList<FeedItem>();
+    private FeedItem current;
+    private StringBuilder builder;
 
     private Source source;
 
@@ -32,7 +29,7 @@ final class FeedHandler extends DefaultHandler {
     @Override
     public void startElement(String uri, String localName, String qName,
                              org.xml.sax.Attributes attributes) throws SAXException {
-        if (isItem(localName, qName)) {
+        if (ITEM.isElementNameContained(localName, qName)) {
             current = new FeedItem();
             current.setType(Type.FEED);
             current.setMarker(source.shortName());
@@ -50,86 +47,15 @@ final class FeedHandler extends DefaultHandler {
     public void endElement(String uri, String localName, String qName)
             throws SAXException {
         if (current != null) {
-            if (isTitle(localName, qName)) {
-                current.setTitle(builder.toString());
-            }
-            if (isDescription(localName, qName)) {
-                current.setDescription(builder.toString());
-            }
-            if (isLink(localName, qName)) {
-                current.setLink(builder.toString());
-            }
-            if (isPubDate(localName, qName)) {
-                final String dateAsString = builder.toString();
-                current.setFrom(convertToDate(dateAsString));
-            }
-            if (isId(localName, qName)) {
-                current.setId(builder.toString());
-            }
+            FeedElement.elementFor(localName, qName).setProperty(current, builder.toString());
         }
-        if (isItem(localName, qName)) {
-            feedItems.add(current);
+        if (ITEM.isElementNameContained(localName, qName)) {
+            getFeedItems().add(current);
             current = null;
         }
     }
 
-    private Date convertToDate(String dateAsString) {
-        Date from;
-        try {
-            from = FeedExtractor.newRSSGMTDateFormat().parse(dateAsString);
-        } catch (ParseException e) {
-            try {
-                from = new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateAsString);
-            } catch (ParseException e2) {
-                try {
-                    from = new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateAsString.replaceAll("([+-][0-9]{2}:[0-9]{2})$", "GMT$1"));
-                } catch (ParseException e3) {
-                    throw Throwables.propagate(e3);
-                }
-            }
-        }
-        return from;
+    public List<FeedItem> getFeedItems() {
+        return feedItems;
     }
-
-    private boolean isId(String localName, String qName) {
-        return isElementNameContained(localName, qName, "guid", "id");
-    }
-
-    private boolean isItem(String localName, String qName) {
-        return isElementNameContained(localName, qName, "item", "entry");
-    }
-
-    private boolean isPubDate(String localName, String qName) {
-        return isElementNameContained(localName, qName, "pubDate", "updated");
-    }
-
-    private boolean isLink(String localName, String qName) {
-        return isElementNameContained(localName, qName, "link");
-    }
-
-    private boolean isDescription(String localName, String qName) {
-        return isElementNameContained(localName, qName, "description", "summary", "content");
-    }
-
-    private boolean isTitle(String localName, String qName) {
-        return isElementNameContained(localName, qName, "title");
-    }
-
-    private boolean isElementNameContained(String localName, String qName, String... elementNames) {
-        return Arrays.asList(elementNames).contains(elementName(localName, qName));
-    }
-
-    /**
-     * Within a Junit Test the runtime behaves seemingly different, so we
-     * have to use the name value that's set?! TODO: find out why
-     *
-     * @param localName the local name
-     * @param qName     the qName
-     * @return the element name
-     */
-    private String elementName(String localName, String qName) {
-        return localName != null && localName.length() > 0 ? localName
-                : qName;
-    }
-
 }

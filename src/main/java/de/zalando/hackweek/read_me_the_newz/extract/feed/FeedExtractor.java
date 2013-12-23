@@ -48,12 +48,12 @@ public final class FeedExtractor {
         saxParser.parse(new InputSource(new BufferedReader(
                 new InputStreamReader(content, Charset.forName("utf-8")))),
                 feedHandler);
-        return feedHandler.feedItems;
+        return feedHandler.getFeedItems();
     }
 
     public List<FeedItem> extract(String fullRss) throws SAXException, IOException {
         saxParser.parse(new ByteArrayInputStream(fullRss.getBytes("UTF-8")),
                 feedHandler);
-        return feedHandler.feedItems;
+        return feedHandler.getFeedItems();
     }
 }
