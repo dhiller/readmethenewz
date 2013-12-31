@@ -1,18 +1,17 @@
 
 package de.zalando.hackweek.read_me_the_newz.extract;
 
-import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedItem;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.InputStream;
-import java.util.List;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import de.zalando.hackweek.read_me_the_newz.extract.feed.Feed;
 
 public abstract class ContentProvider {
 
     protected final Source source;
 
-    public ContentProvider(Source source) {
+    public ContentProvider(final Source source) {
         super();
         this.source = checkNotNull(source);
     }
@@ -21,7 +20,7 @@ public abstract class ContentProvider {
         return source;
     }
 
-    public List<FeedItem> extract() throws Exception {
+    public Feed extract() throws Exception {
         return source().type().extract(this);
     }
 

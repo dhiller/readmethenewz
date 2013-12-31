@@ -1,24 +1,32 @@
 package de.zalando.hackweek.read_me_the_newz.extract.feed;
 
-import com.google.common.base.Throwables;
-import de.zalando.hackweek.read_me_the_newz.extract.Source;
-import de.zalando.hackweek.read_me_the_newz.extract.Type;
+import static org.hamcrest.Matchers.*;
+
+import static org.junit.Assert.assertThat;
+
+import java.io.IOException;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.hamcrest.Matchers;
+
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.junit.experimental.runners.Enclosed;
+
 import org.junit.runner.RunWith;
+
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.List;
+import com.google.common.base.Throwables;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
+import de.zalando.hackweek.read_me_the_newz.extract.Source;
+import de.zalando.hackweek.read_me_the_newz.extract.Type;
 
 /**
  * @author dhiller
@@ -33,7 +41,7 @@ public class FeedExtractorTest {
         private String resourceName;
         private FeedExtractor underTest;
 
-        protected FeedExtractor newFeedExtractorFromSource(Source s) {
+        protected FeedExtractor newFeedExtractorFromSource(final Source s) {
             try {
                 return new FeedExtractor(s);
             } catch (ParserConfigurationException e) {
@@ -43,11 +51,11 @@ public class FeedExtractorTest {
             }
         }
 
-        protected Source newSourceFrom(URI source) {
+        protected Source newSourceFrom(final URI source) {
             return new Source("test", "test", Type.FEED, source);
         }
 
-        protected URI uriOfResource(String resourceName) {
+        protected URI uriOfResource(final String resourceName) {
             try {
                 return getClass().getResource(resourceName).toURI();
             } catch (URISyntaxException e) {
@@ -61,7 +69,7 @@ public class FeedExtractorTest {
 
         @Test
         public void extract() throws IOException, SAXException {
-            List<FeedItem> items = extractItems();
+            Feed items = extractItems();
             assertThat(items,
                     hasItems(
                             Matchers.<FeedItem>allOf(
@@ -75,7 +83,7 @@ public class FeedExtractorTest {
             );
         }
 
-        private List<FeedItem> extractItems() throws SAXException, IOException {
+        private Feed extractItems() throws SAXException, IOException {
             return getUnderTest().extract(getClass().getResourceAsStream(getResourceName()));
         }
 
@@ -83,7 +91,7 @@ public class FeedExtractorTest {
             return resourceName;
         }
 
-        public void setResourceName(String resourceName) {
+        public void setResourceName(final String resourceName) {
             this.resourceName = resourceName;
         }
 
@@ -91,7 +99,7 @@ public class FeedExtractorTest {
             return underTest;
         }
 
-        public void setUnderTest(FeedExtractor underTest) {
+        public void setUnderTest(final FeedExtractor underTest) {
             this.underTest = underTest;
         }
     }

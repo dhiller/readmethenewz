@@ -1,49 +1,63 @@
 package de.zalando.hackweek.read_me_the_newz;
 
+import static java.lang.String.format;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import java.util.List;
+import java.util.Locale;
+
+import org.jsoup.Jsoup;
+
+import com.google.common.base.Throwables;
+
+import de.zalando.hackweek.read_me_the_newz.extract.ByteArrayContentProvider;
+import de.zalando.hackweek.read_me_the_newz.extract.feed.Feed;
+import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedItem;
+import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedSource;
+
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+
 import android.media.AudioManager;
+
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+
 import android.speech.tts.TextToSpeech;
+
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
+
 import android.util.Log;
+
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import com.google.common.base.Throwables;
-import de.zalando.hackweek.read_me_the_newz.extract.ByteArrayContentProvider;
-import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedItem;
-import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedSource;
-import org.jsoup.Jsoup;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-
-import static java.lang.String.format;
 
 public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChangeListener, TextToSpeech.OnInitListener {
 
     private static final String ID = "ReadNewz";
 
-    /** ID of the ReadNewz notification for {@code NotificationManager}. */
+    /**
+     * ID of the ReadNewz notification for {@code NotificationManager}.
+     */
     private static final int NOTIFICATION_ID = 1;
 
     private final ItemPlayback itemPlayback = new ItemPlayback();
@@ -64,7 +78,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     private List<FeedSource> feedSources;
     private int rssFeedDescriptorIndex = 0;
 
-    private List<FeedItem> rssFeedItems;
+    private Feed rssFeedItems;
     private int rssItemIndex = 0;
     private int rssItemSentenceIndex = 0;
 
@@ -108,7 +122,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
+    protected void onSaveInstanceState(final Bundle outState) {
         super.onSaveInstanceState(outState);
         Log.d(ID, "onSaveInstanceState " + this);
         outState.putInt("rssFeedIndex", rssFeedDescriptorIndex);
@@ -142,6 +156,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         if (activeAsyncTask != null) {
             activeAsyncTask.cancel(true);
         }
+
         itemPlayback.stopSpeaking();
         unregisterReceiver(mediaButtonReceiver);
         abandonAudioFocus();
@@ -161,28 +176,29 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         final boolean newAudioFocus;
         switch (focusChange) {
-        case AudioManager.AUDIOFOCUS_GAIN :
-            Log.d(ID, "Regained audio focus");
-            newAudioFocus = true;
-            break;
 
-        case AudioManager.AUDIOFOCUS_LOSS :
-            Log.d(ID, "Lost audio focus");
-            newAudioFocus = false;
-            abandonAudioFocus();
-            break;
+            case AudioManager.AUDIOFOCUS_GAIN:
+                Log.d(ID, "Regained audio focus");
+                newAudioFocus = true;
+                break;
 
-        case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT :
-            Log.d(ID, "Ignoring transient audio focus loss");
-            return;
+            case AudioManager.AUDIOFOCUS_LOSS:
+                Log.d(ID, "Lost audio focus");
+                newAudioFocus = false;
+                abandonAudioFocus();
+                break;
 
-        case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK :
-            Log.d(ID, "Ignoring transient, duckable audio focus loss");
-            return;
+            case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT:
+                Log.d(ID, "Ignoring transient audio focus loss");
+                return;
 
-        default :
-            Log.i(ID, "Ignoring audio focus loss change event of type " + focusChange);
-            return;
+            case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK:
+                Log.d(ID, "Ignoring transient, duckable audio focus loss");
+                return;
+
+            default:
+                Log.i(ID, "Ignoring audio focus loss change event of type " + focusChange);
+                return;
         }
 
         runOnUiThread(new Runnable() {
@@ -200,7 +216,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         final int result = audioManager.requestAudioFocus(this, //
                 AudioManager.STREAM_MUSIC,   // Use the music stream.
                 AudioManager.AUDIOFOCUS_GAIN // Request permanent focus.
-                );
+        );
 
         if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             updateAudioFocus(true);
@@ -242,7 +258,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     /**
      * Called after initialization of TextToSpeech.
      *
-     * @param status the initialization result
+     * @param  status  the initialization result
      */
     @Override
     public void onInit(final int status) {
@@ -258,12 +274,13 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         updateRSSItems();
     }
 
-    public boolean setLanguage(Locale language) {
+    public boolean setLanguage(final Locale language) {
         int result = textToSpeech.setLanguage(language);
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
             Log.e(ID, "Language ENGLISH not supported!");
             return true;
         }
+
         return false;
     }
 
@@ -276,12 +293,12 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     // @Override
     // public boolean dispatchKeyEvent(KeyEvent event) {
-    //     Log.d(ID, "dispatchKeyEvent: " + event.getKeyCode() + ", " + event.getAction());
-    //     handleMediaKeyEvent(event);
-    //     return super.dispatchKeyEvent(event);
+    // Log.d(ID, "dispatchKeyEvent: " + event.getKeyCode() + ", " + event.getAction());
+    // handleMediaKeyEvent(event);
+    // return super.dispatchKeyEvent(event);
     // }
 
-    private void handleMediaKeyEvent(KeyEvent keyEvent) {
+    private void handleMediaKeyEvent(final KeyEvent keyEvent) {
         if (keyEvent.getRepeatCount() == 0 && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
             handleMediaKeyEvent(keyEvent.getKeyCode());
         }
@@ -289,34 +306,36 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
     private void handleMediaKeyEvent(final int keyCode) {
         switch (keyCode) {
-        case KeyEvent.KEYCODE_MEDIA_PLAY :
-            shouldSpeak = true;
-            if (!itemPlayback.isSpeaking()) {
-                itemPlayback.startSpeaking();
-            }
-            break;
 
-        case KeyEvent.KEYCODE_MEDIA_STOP :
-            shouldSpeak = false;
-            itemPlayback.stopSpeaking();
-            break;
+            case KeyEvent.KEYCODE_MEDIA_PLAY:
+                shouldSpeak = true;
+                if (!itemPlayback.isSpeaking()) {
+                    itemPlayback.startSpeaking();
+                }
 
-        case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE :
-            playPause(null);
-            break;
+                break;
 
-        case KeyEvent.KEYCODE_MEDIA_NEXT :
-            playbackNextItem();
-            break;
+            case KeyEvent.KEYCODE_MEDIA_STOP:
+                shouldSpeak = false;
+                itemPlayback.stopSpeaking();
+                break;
 
-        case KeyEvent.KEYCODE_MEDIA_PREVIOUS :
-            playbackPreviousItem();
-            break;
+            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+                playPause(null);
+                break;
 
-        case KeyEvent.KEYCODE_HEADSETHOOK :
-            shouldSpeak = false;
-            itemPlayback.stopSpeaking();
-            break;
+            case KeyEvent.KEYCODE_MEDIA_NEXT:
+                playbackNextItem();
+                break;
+
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                playbackPreviousItem();
+                break;
+
+            case KeyEvent.KEYCODE_HEADSETHOOK:
+                shouldSpeak = false;
+                itemPlayback.stopSpeaking();
+                break;
         }
     }
 
@@ -368,25 +387,28 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
 
         // Handle item selection
         switch (item.getItemId()) {
-        case R.id.close :
-            shouldSpeak = false;
-            itemPlayback.stopSpeaking();
-            abandonAudioFocus();
-            cancelNotification();
-            finish();
-            return true;
 
-        default :
-            return super.onOptionsItemSelected(item);
+            case R.id.close:
+                shouldSpeak = false;
+                itemPlayback.stopSpeaking();
+                abandonAudioFocus();
+                cancelNotification();
+                finish();
+                return true;
+
+            default:
+                return super.onOptionsItemSelected(item);
         }
     }
 
     // --- Notification ---
 
-    private NotificationCompat.Builder createNotification(CharSequence contentText) {
+    private NotificationCompat.Builder createNotification(final CharSequence contentText) {
+
         // The contentIntent will be executed when the user clicks on the notification
         // This will be this activity
         final Intent contentIntent = new Intent(this, getClass());
+
         // Reuse a already running activity instead of launching a new one
         contentIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
@@ -408,12 +430,10 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         // content text as function parameter in order to ensure that a
         // notification returned by this function is always displayable.
 
-        return new NotificationCompat.Builder(this)
-        .setOngoing(true)
-        .setSmallIcon(R.drawable.app_logo)
-        .setContentIntent(pendingIntent)
-        .setContentTitle(getResources().getString(R.string.app_name))
-        .setContentText(contentText);
+        return new NotificationCompat.Builder(this).setOngoing(true).setSmallIcon(R.drawable.app_logo)
+                .setContentIntent(pendingIntent)
+                .setContentTitle(getResources().getString(R.string.app_name))
+                .setContentText(contentText);
     }
 
     private void updateNotification(final Notification notification) {
@@ -437,14 +457,16 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         updateRSSItems();
     }
 
-    private void setRssFeedIndex(int feedIndex) {
+    private void setRssFeedIndex(final int feedIndex) {
         rssFeedDescriptorIndex = feedIndex;
         if (rssFeedDescriptorIndex >= feedSources.size()) {
             rssFeedDescriptorIndex = 0;
         }
+
         if (rssFeedDescriptorIndex < 0) {
             rssFeedDescriptorIndex = feedSources.size() - 1;
         }
+
         rssItemSentenceIndex = 0;
     }
 
@@ -479,7 +501,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         setRssItemIndex(rssItemIndex - 1);
     }
 
-    private void setRssItemIndex(int newrssItemIndex) {
+    private void setRssItemIndex(final int newrssItemIndex) {
         rssItemIndex = newrssItemIndex;
         rssItemSentenceIndex = 0;
         itemPlayback.setSentenceIndex(rssItemSentenceIndex);
@@ -518,17 +540,17 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         findViewById(R.id.playPause).setEnabled(rssFeedItems.size() > 0);
     }
 
-    private void setTitle(String titleText) {
+    private void setTitle(final String titleText) {
         TextView textView = (TextView) findViewById(R.id.rssItemTitle);
         textView.setText(titleText, TextView.BufferType.EDITABLE);
     }
 
-    private void setPlaybackCurrentSentence(String text) {
+    private void setPlaybackCurrentSentence(final String text) {
         TextView textView = (TextView) findViewById(R.id.text);
         textView.setText(text, TextView.BufferType.EDITABLE);
     }
 
-    private void setStatusTextIndeterminate(String status) {
+    private void setStatusTextIndeterminate(final String status) {
         setStatusText(status, 0, 0);
     }
 
@@ -600,9 +622,9 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
             final Progress progress = values[0];
 
             if (progress.isTotalBytesAvailable()) {
-                Log.i(ID, progress.getBytesReceived() + "/"+ progress.getTotalBytes());
-                setStatusText(format("Downloaded %s%%…", progress.getPercentage()),
-                        (int) progress.getBytesReceived(), (int) progress.getTotalBytes());
+                Log.i(ID, progress.getBytesReceived() + "/" + progress.getTotalBytes());
+                setStatusText(format("Downloaded %s%%…", progress.getPercentage()), (int) progress.getBytesReceived(),
+                        (int) progress.getTotalBytes());
             } else {
                 Log.i(ID, Long.toString(progress.getBytesReceived()));
                 setStatusTextIndeterminate(format("Downloaded %d bytes…", progress.getBytesReceived()));
@@ -638,7 +660,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
 
         @Override
-        protected URL getUrl(FeedSource url) {
+        protected URL getUrl(final FeedSource url) {
             try {
                 return new URL(url.getUrl());
             } catch (MalformedURLException e) {
@@ -650,7 +672,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     /**
      * Parses downloaded feed content.
      */
-    private final class RssFeedParsingTask extends AsyncTask<DownloadTask.Result<FeedSource>, Void, List<FeedItem>> {
+    private final class RssFeedParsingTask extends AsyncTask<DownloadTask.Result<FeedSource>, Void, Feed> {
         @Override
         protected void onPreExecute() {
             if (activeAsyncTask != this) {
@@ -661,7 +683,7 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
 
         @Override
-        protected List<FeedItem> doInBackground(final DownloadTask.Result<FeedSource>... results) {
+        protected Feed doInBackground(final DownloadTask.Result<FeedSource>... results) {
 
             final DownloadTask.Result<FeedSource> result = results[0];
             final FeedSource descriptor = result.getItem();
@@ -670,12 +692,12 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
                 return new ByteArrayContentProvider(descriptor, result.getContent()).extract();
             } catch (Exception e) {
                 Log.e(ID, "Feed parsing failed", result.getException());
-                return Collections.emptyList();
+                return Feed.emptyFeed();
             }
         }
 
         @Override
-        protected void onPostExecute(final List<FeedItem> result) {
+        protected void onPostExecute(final Feed result) {
             if (activeAsyncTask != this) {
                 return;
             }
@@ -704,9 +726,10 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
     private class ItemPlaybackFeedBackProvider extends ItemPlaybackListener {
 
         @Override
-        void beganWith(int index, int total, final String sentence) {
+        void beganWith(final int index, final int total, final String sentence) {
             rssItemSentenceIndex = index;
             setStatusText("Reading", index, total);
+
             Handler refresh = new Handler(Looper.getMainLooper());
             refresh.post(new Runnable() {
                 @Override
@@ -717,17 +740,17 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
 
         @Override
-        void stoppedAt(int index, int total, String sentence) {
+        void stoppedAt(final int index, final int total, final String sentence) {
             setStatusText("Paused", index, total);
         }
 
         @Override
-        void finishedItem(int index, int total, String sentence) {
+        void finishedItem(final int index, final int total, final String sentence) {
             setStatusText("Finished", index, total);
         }
 
         @Override
-        void finishedAll(int total) {
+        void finishedAll(final int total) {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -746,7 +769,9 @@ public class ReadNewz extends Activity implements AudioManager.OnAudioFocusChang
         }
     }
 
-    /** Handles media button intents sent from {@link RemoteControlReceiver}. */
+    /**
+     * Handles media button intents sent from {@link RemoteControlReceiver}.
+     */
     private final class MediaButtonReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(final Context context, final Intent intent) {

@@ -1,17 +1,16 @@
 
 package de.zalando.hackweek.read_me_the_newz.extract;
 
-import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedExtractor;
-import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedItem;
-
 import java.io.InputStream;
-import java.util.List;
+
+import de.zalando.hackweek.read_me_the_newz.extract.feed.Feed;
+import de.zalando.hackweek.read_me_the_newz.extract.feed.FeedExtractor;
 
 public enum Type {
 
     FEED {
         @Override
-        public List<FeedItem> extract(ContentProvider p) throws Exception {
+        public Feed extract(final ContentProvider p) throws Exception {
             final InputStream content = p.provideContent();
             try {
                 return new FeedExtractor(p.source()).extract(content);
@@ -25,6 +24,6 @@ public enum Type {
     private Type() {
     }
 
-    public abstract List<FeedItem> extract(ContentProvider p) throws Exception;
+    public abstract Feed extract(ContentProvider p) throws Exception;
 
 }
