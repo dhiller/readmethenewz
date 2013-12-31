@@ -68,9 +68,8 @@ public class FeedExtractorTest {
         }
 
         @Test
-        public void extract() throws IOException, SAXException {
-            Feed items = extractItems();
-            assertThat(items,
+        public void extract() {
+            assertThat(extractItems(),
                     hasItems(
                             Matchers.<FeedItem>allOf(
                                     hasProperty("title", notNullValue()),
@@ -83,8 +82,21 @@ public class FeedExtractorTest {
             );
         }
 
-        private Feed extractItems() throws SAXException, IOException {
-            return getUnderTest().extract(getClass().getResourceAsStream(getResourceName()));
+        @Test
+        public void olderNewsComeFirst() {
+            Feed actual = extractItems();
+            assertThat(actual.get(0).getFrom(), is(lessThan(actual.get(1).getFrom())));
+            assertThat(actual.get(actual.size() - 2).getFrom(), is(lessThan(actual.get(actual.size() - 1).getFrom())));
+        }
+
+        private Feed extractItems() {
+            try {
+                return getUnderTest().extract(getClass().getResourceAsStream(getResourceName()));
+            } catch (SAXException e) {
+                throw Throwables.propagate(e);
+            } catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
         }
 
         public String getResourceName() {

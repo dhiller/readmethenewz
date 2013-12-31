@@ -3,6 +3,8 @@ package de.zalando.hackweek.read_me_the_newz.extract.feed;
 import static de.zalando.hackweek.read_me_the_newz.extract.feed.FeedElement.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.xml.sax.SAXException;
@@ -55,7 +57,15 @@ final class FeedHandler extends DefaultHandler {
         }
     }
 
-    public Feed getFeedItems() {
-        return new Feed(feedItems);
+    public Feed feedWithOldestItemsFirst() {
+        final List<FeedItem> result = new ArrayList<FeedItem>();
+        result.addAll(feedItems);
+        Collections.sort(result, new Comparator<FeedItem>() {
+            @Override
+            public int compare(FeedItem lhs, FeedItem rhs) {
+                return (lhs.getFrom().before(rhs.getFrom()) ? -1 : (lhs.getFrom().after(rhs.getFrom()) ? 1 : 0));
+            }
+        });
+        return new Feed(result);
     }
 }

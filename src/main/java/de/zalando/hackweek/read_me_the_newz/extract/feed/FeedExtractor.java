@@ -48,11 +48,11 @@ public final class FeedExtractor {
     public Feed extract(final InputStream content) throws FactoryConfigurationError, SAXException, IOException {
         saxParser.parse(new InputSource(new BufferedReader(new InputStreamReader(content, Charset.forName("utf-8")))),
                 feedHandler);
-        return feedHandler.getFeedItems();
+        return feedHandler.feedWithOldestItemsFirst();
     }
 
     public Feed extract(final String fullRss) throws SAXException, IOException {
         saxParser.parse(new ByteArrayInputStream(fullRss.getBytes("UTF-8")), feedHandler);
-        return feedHandler.getFeedItems();
+        return feedHandler.feedWithOldestItemsFirst();
     }
 }

@@ -209,6 +209,8 @@ class ItemPlayback {
     }
 
     public String getCurrentSentence() {
+        if (this.sentences == null)
+            return "";
         return this.sentences.get(sentenceIndex);
     }
 }
